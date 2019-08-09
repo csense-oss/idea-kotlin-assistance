@@ -1,5 +1,5 @@
 plugins {
-    id("org.jetbrains.intellij") version "0.4.9"
+    id("org.jetbrains.intellij") version "0.4.10"
     kotlin("jvm") version "1.3.41"
     java
     id("org.owasp.dependencycheck") version "5.1.0"
