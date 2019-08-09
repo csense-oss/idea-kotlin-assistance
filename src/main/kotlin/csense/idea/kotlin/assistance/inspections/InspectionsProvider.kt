@@ -5,8 +5,8 @@ import com.intellij.codeInspection.*
 class InspectionsProvider : InspectionToolProvider {
     override fun getInspectionClasses(): Array<Class<*>> {
         return arrayOf(
-                InitializationMethodReference::class.java,
                 InitializationOrder::class.java,
-                NamedArgsPositionMismatch::class.java)
+                NamedArgsPositionMismatch::class.java,
+                InheritanceInitializationOrder::class.java)
     }
 }

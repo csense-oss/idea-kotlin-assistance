@@ -2,6 +2,7 @@ package csense.idea.kotlin.assistance.inspections
 
 import com.intellij.codeHighlighting.*
 import com.intellij.codeInspection.*
+import com.intellij.psi.*
 import csense.idea.kotlin.assistance.*
 import csense.idea.kotlin.assistance.quickfixes.*
 import org.jetbrains.kotlin.idea.inspections.*
@@ -53,7 +54,9 @@ class InitializationOrder : AbstractKotlinInspection() {
             val ourFqName = ourClass.fqName?.asString() ?: return@classOrObjectVisitor
             nonDelegates.forEach { prop: KtProperty ->
                 val propName = prop.name ?: return@forEach
-                val localRefs = prop.findLocalReferences(ourFqName, nonDelegatesQuickLookup)
+                val localRefs = prop.findLocalReferences(
+                        ourFqName,
+                        nonDelegatesQuickLookup.keys)
                 val invalidOrders = localRefs.resolveInvalidOrders(propName, nonDelegatesQuickLookup)
                 if (invalidOrders.isNotEmpty()) {
                     holder.registerProblem(prop,
@@ -98,20 +101,16 @@ fun List<KtProperty>.computeQuickIndexedNameLookup(): Map<String, Int> {
     return nonDelegatesQuickLookup
 }
 
-fun KtProperty.findLocalReferences(
+fun PsiElement.findLocalReferences(
         ourFqNameStart: String,
-        nonDelegatesQuickLookup: Map<String, Int>
+        nonDelegatesQuickLookup: Set<String>
 ): List<KtNameReferenceExpression> {
-    val localRefs = mutableListOf<KtNameReferenceExpression>()
-    forEachDescendantOfType<KtNameReferenceExpression> { nameRef ->
+    return collectDescendantsOfType<KtNameReferenceExpression> { nameRef ->
         val refFqName = nameRef.resolveMainReferenceToDescriptors().firstOrNull()?.fqNameSafe
-                ?: return@forEachDescendantOfType
-        if (refFqName.asString().startsWith(ourFqNameStart) &&
-                nonDelegatesQuickLookup.contains(nameRef.getReferencedName())) {
-            localRefs.add(nameRef)
-        }
+                ?: return@collectDescendantsOfType false
+        return@collectDescendantsOfType refFqName.asString().startsWith(ourFqNameStart) &&
+                nonDelegatesQuickLookup.contains(nameRef.getReferencedName())
     }
-    return localRefs
 }
 
 fun List<KtNameReferenceExpression>.resolveInvalidOrders(name: String, order: Map<String, Int>): List<KtNameReferenceExpression> {

@@ -131,7 +131,9 @@ fun List<KtProperty>.computeDependencyDAG(ourFqName: String): MutableVariableNam
     }
 
     variableMap.forEach { (_, prop) ->
-        val localRefs = prop.realProperty.findLocalReferences(ourFqName, nonDelegatesQuickLookup)
+        val localRefs = prop.realProperty.findLocalReferences(
+                ourFqName,
+                nonDelegatesQuickLookup.keys)
         localRefs.forEach { ref ->
             val itName = ref.resolveMainReferenceToDescriptors().firstOrNull()?.name?.identifier
                     ?: return null

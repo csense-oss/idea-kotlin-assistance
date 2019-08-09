@@ -36,7 +36,7 @@ class MainNotificationComponent : ProjectComponent {
 
     companion object {
         private const val CUSTOM_NOTIFICATION_COMPONENT =
-                "CustomNotificationComponent"
+                "Csense - kotlin assistance"
 //        private val NOTIFICATION_GROUP = object :
 //                NotNullLazyValue<NotificationGroup>() {
 //            override fun compute(): NotificationGroup {
@@ -47,14 +47,14 @@ class MainNotificationComponent : ProjectComponent {
 //            }
 //        }
 
-        fun showNotificationMessage(message: String, project: Project) {
-            ApplicationManager.getApplication().invokeLater {
-                val notification: Notification = GROUP_DISPLAY_ID_INFO.createNotification(message, NotificationType.ERROR)
-                Notifications.Bus.notify(notification, project)
-            }
-        }
-
-        val GROUP_DISPLAY_ID_INFO = NotificationGroup("My notification group",
-                NotificationDisplayType.BALLOON, true)
+//        fun showNotificationMessage(message: String, project: Project) {
+//            ApplicationManager.getApplication().invokeLater {
+//                val notification: Notification = GROUP_DISPLAY_ID_INFO.createNotification(message, NotificationType.ERROR)
+//                Notifications.Bus.notify(notification, project)
+//            }
+//        }
+//
+//        val GROUP_DISPLAY_ID_INFO = NotificationGroup("My notification group",
+//                NotificationDisplayType.BALLOON, true)
     }
 }
