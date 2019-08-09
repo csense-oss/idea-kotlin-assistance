@@ -1,0 +1,39 @@
+<idea-plugin>
+    <id>csense-idea.kotlin-assistance</id>
+    <name>Csense - kotlin assistance</name>
+    <vendor email="csense@tvedesys.dk" url="https://github.com/csense-oss/idea-kotlin-assistant">
+        Csense oss
+    </vendor>
+
+    <description><![CDATA[
+     A plugin that helps you avoid common issues with kotlin & various JVM bugs & unforeseen issues.
+     Examples include:
+        - initialization order bugs
+        - mismatched lambda parameter names (for example forEachIndex, where the first should be index, but easily can be mistaken)
+        - mismatched parameter names (you use the wrong place for the given argument)
+
+    ]]></description>
+
+    <depends>com.intellij.modules.lang</depends>
+    <depends>org.jetbrains.kotlin</depends>
+    <depends>com.intellij.modules.java</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <inspectionToolProvider
+                implementation="csense.idea.kotlin.assistance.inspections.InspectionsProvider"/>
+    </extensions>
+
+    <project-components>
+        <component>
+            <implementation-class>
+                csense.idea.kotlin.assistance.notification.MainNotificationComponent
+            </implementation-class>
+        </component>
+    </project-components>
+
+    <actions>
+        <!-- Add your actions here -->
+    </actions>
+
+    <idea-version since-build="182"/>
+</idea-plugin>
