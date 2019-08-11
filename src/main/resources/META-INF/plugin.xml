@@ -8,10 +8,11 @@
     <description><![CDATA[
      A plugin that helps you avoid common issues with kotlin & various JVM bugs & unforeseen issues.
      Examples include:
-        - initialization order bugs
-        - mismatched lambda parameter names (for example forEachIndex, where the first should be index, but easily can be mistaken)
-        - mismatched parameter names (you use the wrong place for the given argument)
-
+     <ul>
+        <li> initialization order bugs </li>
+        <li> mismatched lambda parameter names (for example forEachIndex, where the first should be index, but easily can be mistaken) </li>
+        <li> mismatched parameter names (you use the wrong place for the given argument) </li>
+     </ul>
     ]]></description>
 
     <depends>com.intellij.modules.lang</depends>

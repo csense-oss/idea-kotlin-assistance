@@ -6,7 +6,7 @@ plugins {
 }
 
 group = "csense-idea"
-version = "0.2"
+version = "0.3"
 // See https://github.com/JetBrains/gradle-intellij-plugin/
 
 intellij {
@@ -25,8 +25,14 @@ dependencies {
 
 tasks.getByName<org.jetbrains.intellij.tasks.PatchPluginXmlTask>("patchPluginXml") {
     changeNotes("""
-        Fixed minor issue.
-        Initial work of inheritance based initialization order inspection.
+        <ul>
+            <li> avoid repeating names in inspections.</li>
+            <li> exclude synthetic properties for inheritance initialization order (only getter (optionally setter)) since they are only functions</li>
+            <li> reference names in initializationInheritance order.</li>
+            <li> ignore inspections added (WIP)</li>
+            <li> handles getter only properties better & handles property setter better</li>
+            <li> improved rearrange so that it only inspects the initializer, thus are able to work in more cases.</li>
+         </ul>
       """)
 }
 
