@@ -77,7 +77,9 @@ class InitializationOrder : AbstractKotlinInspection() {
     }
 
     fun createErrorDescription(invalidOrders: List<KtNameReferenceExpression>): String {
-        val invalidOrdersNames = invalidOrders.joinToString("\",\"", prefix = "\"", postfix = "\"") { it.getReferencedName() }
+        val invalidOrdersNames = invalidOrders.map {
+            it.getReferencedName()
+        }.toSet().joinToString("\",\"", prefix = "\"", postfix = "\"")
         return "Initialization order is invalid for $invalidOrdersNames\nIt can / will result in null at runtime(Due to the JVM)"
     }
 

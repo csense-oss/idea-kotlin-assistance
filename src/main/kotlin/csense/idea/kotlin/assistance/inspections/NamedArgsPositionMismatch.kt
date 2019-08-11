@@ -72,7 +72,6 @@ class NamedArgsPositionMismatch : AbstractKotlinInspection() {
 
                 val argName = lambdaArg.getLambdaExpression() ?: return@forEach
                 val usedLambdaArgumentNames = argName.valueParameters.map { parms -> parms.name }
-                val index = lambdaArg.parameterIndex()
 
                 val namedArgs = callingFunction.valueParameters[0].type.arguments.map { typeArgs ->
                     typeArgs.type.findLambdaParameterName()
@@ -87,7 +86,7 @@ class NamedArgsPositionMismatch : AbstractKotlinInspection() {
     }
 
     fun reportProblem(atElement: PsiElement, mismatches: List<MismatchedName>, holder: ProblemsHolder) {
-        val names = mismatches.joinToString(",") {
+        val names = mismatches.distinctBy { it.name }.joinToString(",") {
             it.name
         }
         holder.registerProblem(atElement,
@@ -95,7 +94,7 @@ class NamedArgsPositionMismatch : AbstractKotlinInspection() {
     }
 
     fun reportLambdaProblem(atElement: PsiElement, mismatches: List<MismatchedName>, holder: ProblemsHolder) {
-        val names = mismatches.joinToString(",") {
+        val names = mismatches.distinctBy { it.name }.joinToString(",") {
             "\"${it.name}\" - should be at position ${it.shouldBeAtIndex}"
         }
         holder.registerProblem(atElement,

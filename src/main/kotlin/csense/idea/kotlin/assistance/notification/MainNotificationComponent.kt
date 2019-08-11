@@ -16,15 +16,6 @@ class MainNotificationComponent : ProjectComponent {
     override fun initComponent() {
         L.usePrintAsLoggers()
         L.isLoggingAllowed(true)
-//        ApplicationManager.getApplication()
-//                .invokeLater({
-//                    Notifications.Bus.notify(NOTIFICATION_GROUP.value
-//                            .createNotification(
-//                                    "Testing Personal Plugin",
-//                                    "Love kotlin",
-//                                    NotificationType.INFORMATION,
-//                                    null))
-//                }, ModalityState.NON_MODAL)
     }
 
 
@@ -37,24 +28,5 @@ class MainNotificationComponent : ProjectComponent {
     companion object {
         private const val CUSTOM_NOTIFICATION_COMPONENT =
                 "Csense - kotlin assistance"
-//        private val NOTIFICATION_GROUP = object :
-//                NotNullLazyValue<NotificationGroup>() {
-//            override fun compute(): NotificationGroup {
-//                return NotificationGroup(
-//                        "Motivational message",
-//                        NotificationDisplayType.STICKY_BALLOON,
-//                        true)
-//            }
-//        }
-
-//        fun showNotificationMessage(message: String, project: Project) {
-//            ApplicationManager.getApplication().invokeLater {
-//                val notification: Notification = GROUP_DISPLAY_ID_INFO.createNotification(message, NotificationType.ERROR)
-//                Notifications.Bus.notify(notification, project)
-//            }
-//        }
-//
-//        val GROUP_DISPLAY_ID_INFO = NotificationGroup("My notification group",
-//                NotificationDisplayType.BALLOON, true)
     }
 }
