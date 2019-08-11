@@ -2,12 +2,14 @@ package csense.idea.kotlin.assistance.inspections
 
 import com.intellij.codeHighlighting.*
 import com.intellij.codeInspection.*
-import com.intellij.psi.util.*
+import com.intellij.openapi.editor.*
+import com.intellij.openapi.project.*
+import com.intellij.psi.*
 import csense.idea.kotlin.assistance.*
+import csense.idea.kotlin.assistance.suppression.*
 import org.jetbrains.kotlin.idea.core.*
 import org.jetbrains.kotlin.idea.inspections.*
 import org.jetbrains.kotlin.idea.refactoring.*
-import org.jetbrains.kotlin.idea.refactoring.fqName.*
 import org.jetbrains.kotlin.idea.references.*
 import org.jetbrains.kotlin.js.resolve.diagnostics.*
 import org.jetbrains.kotlin.lexer.*
@@ -49,6 +51,10 @@ class InheritanceInitializationOrder : AbstractKotlinInspection() {
         return true
     }
 
+    override fun getSuppressActions(element: PsiElement?): Array<SuppressIntentionAction>? {
+        return arrayOf(
+                PropertyFunctionSuppressor("Suppress inheritance initialization issue", groupDisplayName, shortName))
+    }
 
     //we have 2 parts of this inspection
     //part 1 is the base class "issue", where we are accessing / using abstract / open from fields or the init function.
@@ -80,9 +86,11 @@ class InheritanceInitializationOrder : AbstractKotlinInspection() {
 
     fun handleBaseClass(ourClass: KtClass, ourFqName: String, holder: ProblemsHolder) {
         computeBaseClassDangerousStarts(ourClass, ourFqName)
-                .forEach { (property, _) ->
+                .forEach { (property, references) ->
+                    val refNames = references.map { it.getReferencedName() }.distinct()
                     holder.registerProblem(property,
                             "You are using a constructor provided argument for an overridden property\n" +
+                                    "For the following: \"${refNames.joinToString("\",\"")}\" - " +
                                     "This has the potential to cause a NullPointerException \n" +
                                     "if the base class uses this in any initialization  (field or init)",
                             ProblemHighlightType.WEAK_WARNING)
@@ -123,8 +131,10 @@ class InheritanceInitializationOrder : AbstractKotlinInspection() {
         propertiesOverridden.forEach {
             val usesConstructorParameterInOverridden = it.findLocalReferences(ourFqName, toLookFor)
             if (usesConstructorParameterInOverridden.isNotEmpty() && superProblemsNames.contains(it.name ?: "")) {
+                val refNames = usesConstructorParameterInOverridden.map { exp -> exp.getReferencedName() }.distinct()
                 holder.registerProblem(it,
                         "You are using a constructor provided argument for an overridden property\n" +
+                                "References: \"${refNames.joinToString("\",\"")}\";\n" +
                                 "This has the potential to cause a NullPointerException \n" +
                                 "if the base class uses this in any initialization  (field or init)")
             }
@@ -133,8 +143,10 @@ class InheritanceInitializationOrder : AbstractKotlinInspection() {
         functionsOverriding.forEach { function ->
             val usesConstructorParameterInOverridden = function.findLocalReferences(ourFqName, toLookFor)
             if (usesConstructorParameterInOverridden.isNotEmpty() && superProblemsNames.contains(function.name ?: "")) {
+                val refNames = usesConstructorParameterInOverridden.map { exp -> exp.getReferencedName() }.distinct()
                 holder.registerProblem(function,
                         "You are using a constructor provided argument for an overridden function.\n" +
+                                "References: \"${refNames.joinToString("\",\"")}\";\n" +
                                 "This will cause a NullPointerException, since it is used in the base class initialization")
             }
         }
@@ -142,8 +154,13 @@ class InheritanceInitializationOrder : AbstractKotlinInspection() {
 
     }
 
-    fun computeBaseClassDangerousStarts(ourClass: KtClass, ourFqName: String): Map<KtProperty, List<KtNameReferenceExpression>> {
-        val nonDelegates = ourClass.findNonDelegatingProperties()
+    fun computeBaseClassDangerousStarts(
+            ourClass: KtClass,
+            ourFqName: String
+    ): Map<KtProperty, List<KtNameReferenceExpression>> {
+        val nonDelegates = ourClass.findNonDelegatingProperties().filter {
+            it.isAbstractOrOpen() || it.hasInitializer()
+        }
         val dangerousProperties = nonDelegates.filter {
             it.isAbstractOrOpen()
         }
@@ -207,3 +224,21 @@ fun KtProperty.isAbstractOrOpen(): Boolean {
 }
 
 fun KtClass.getAllFunctions(): List<KtNamedFunction> = collectDescendantsOfType()
+
+inline fun <reified T : Any> PsiElement.findParentOfType(): T? {
+    return findParentAndBeforeFromType<T>()?.first
+}
+
+
+inline fun <reified T : Any> PsiElement.findParentAndBeforeFromType(): Pair<T, PsiElement>? {
+    var currentElement: PsiElement? = this
+    var previousType = this
+    while (currentElement != null) {
+        if (currentElement is T) {
+            return Pair(currentElement, previousType)
+        }
+        previousType = currentElement
+        currentElement = currentElement.parent
+    }
+    return null
+}

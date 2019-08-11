@@ -7,6 +7,7 @@ plugins {
 
 group = "csense-idea"
 version = "0.2"
+// See https://github.com/JetBrains/gradle-intellij-plugin/
 
 intellij {
     updateSinceUntilBuild = false //Disables updating since-build attribute in plugin.xml

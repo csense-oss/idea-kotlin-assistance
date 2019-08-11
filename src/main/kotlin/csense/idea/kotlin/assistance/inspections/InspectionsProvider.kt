@@ -9,4 +9,5 @@ class InspectionsProvider : InspectionToolProvider {
                 NamedArgsPositionMismatch::class.java,
                 InheritanceInitializationOrder::class.java)
     }
+
 }

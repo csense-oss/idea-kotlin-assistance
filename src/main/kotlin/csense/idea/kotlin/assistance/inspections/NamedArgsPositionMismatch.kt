@@ -4,11 +4,11 @@ import com.intellij.codeHighlighting.*
 import com.intellij.codeInspection.*
 import com.intellij.psi.*
 import csense.idea.kotlin.assistance.*
+import csense.idea.kotlin.assistance.suppression.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.idea.caches.resolve.*
 import org.jetbrains.kotlin.idea.inspections.*
 import org.jetbrains.kotlin.psi.*
-import org.jetbrains.kotlin.psi.psiUtil.*
 import org.jetbrains.kotlin.resolve.annotations.*
 import org.jetbrains.kotlin.types.*
 
@@ -41,6 +41,11 @@ class NamedArgsPositionMismatch : AbstractKotlinInspection() {
 
     override fun isEnabledByDefault(): Boolean {
         return true
+    }
+
+    override fun getSuppressActions(element: PsiElement?): Array<SuppressIntentionAction>? {
+        return arrayOf(
+                KtExpressionSuppression("Suppress naming mismatch issue", groupDisplayName, shortName))
     }
 
     override fun getDefaultLevel(): HighlightDisplayLevel {

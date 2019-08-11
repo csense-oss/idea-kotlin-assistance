@@ -5,10 +5,13 @@ import com.intellij.codeInspection.*
 import com.intellij.psi.*
 import csense.idea.kotlin.assistance.*
 import csense.idea.kotlin.assistance.quickfixes.*
+import csense.idea.kotlin.assistance.suppression.*
 import org.jetbrains.kotlin.idea.inspections.*
+import org.jetbrains.kotlin.idea.refactoring.*
 import org.jetbrains.kotlin.idea.references.*
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.psi.psiUtil.*
+import org.jetbrains.kotlin.psi.psiUtil.isAbstract
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
 
 class InitializationOrder : AbstractKotlinInspection() {
@@ -46,6 +49,11 @@ class InitializationOrder : AbstractKotlinInspection() {
         return true
     }
 
+    override fun getSuppressActions(element: PsiElement?): Array<SuppressIntentionAction>? {
+        return arrayOf(
+                PropertyFunctionSuppressor("Suppress initialization issue", groupDisplayName, shortName))
+    }
+
     override fun buildVisitor(holder: ProblemsHolder,
                               isOnTheFly: Boolean): KtVisitorVoid {
         return classOrObjectVisitor { ourClass: KtClassOrObject ->
@@ -54,7 +62,7 @@ class InitializationOrder : AbstractKotlinInspection() {
             val ourFqName = ourClass.fqName?.asString() ?: return@classOrObjectVisitor
             nonDelegates.forEach { prop: KtProperty ->
                 val propName = prop.name ?: return@forEach
-                val localRefs = prop.findLocalReferences(
+                val localRefs = prop.findLocalReferencesForInitializer(
                         ourFqName,
                         nonDelegatesQuickLookup.keys)
                 val invalidOrders = localRefs.resolveInvalidOrders(propName, nonDelegatesQuickLookup)
@@ -92,6 +100,9 @@ fun KtClassOrObject.findNonDelegatingProperties(): List<KtProperty> {
     return getProperties().filterNot { prop -> prop.hasDelegate() }
 }
 
+fun KtProperty.hasNoInitializer() = !hasInitializer()
+fun KtNamedDeclaration.isNotAbstract(): Boolean = !isAbstract()
+
 fun List<KtProperty>.computeQuickIndexedNameLookup(): Map<String, Int> {
     val nonDelegatesQuickLookup: MutableMap<String, Int> = mutableMapOf()
     forEachIndexed { index, item ->
@@ -113,6 +124,18 @@ fun PsiElement.findLocalReferences(
         return@collectDescendantsOfType refFqName.asString().startsWith(ourFqNameStart) &&
                 nonDelegatesQuickLookup.contains(nameRef.getReferencedName())
     }
+}
+
+fun KtProperty.findLocalReferencesForInitializer(
+        ourFqNameStart: String,
+        nonDelegatesQuickLookup: Set<String>
+): List<KtNameReferenceExpression> {
+    return initializer?.collectDescendantsOfType<KtNameReferenceExpression> { nameRef ->
+        val refFqName = nameRef.resolveMainReferenceToDescriptors().firstOrNull()?.fqNameSafe
+                ?: return@collectDescendantsOfType false
+        return@collectDescendantsOfType refFqName.asString().startsWith(ourFqNameStart) &&
+                nonDelegatesQuickLookup.contains(nameRef.getReferencedName())
+    } ?: return listOf()
 }
 
 fun List<KtNameReferenceExpression>.resolveInvalidOrders(name: String, order: Map<String, Int>): List<KtNameReferenceExpression> {

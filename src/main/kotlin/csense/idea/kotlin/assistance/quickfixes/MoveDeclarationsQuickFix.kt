@@ -131,7 +131,7 @@ fun List<KtProperty>.computeDependencyDAG(ourFqName: String): MutableVariableNam
     }
 
     variableMap.forEach { (_, prop) ->
-        val localRefs = prop.realProperty.findLocalReferences(
+        val localRefs = prop.realProperty.findLocalReferencesForInitializer(
                 ourFqName,
                 nonDelegatesQuickLookup.keys)
         localRefs.forEach { ref ->
