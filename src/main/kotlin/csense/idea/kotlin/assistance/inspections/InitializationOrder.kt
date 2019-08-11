@@ -6,12 +6,12 @@ import com.intellij.psi.*
 import csense.idea.kotlin.assistance.*
 import csense.idea.kotlin.assistance.quickfixes.*
 import csense.idea.kotlin.assistance.suppression.*
+import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.idea.inspections.*
-import org.jetbrains.kotlin.idea.refactoring.*
 import org.jetbrains.kotlin.idea.references.*
+import org.jetbrains.kotlin.js.resolve.diagnostics.*
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.psi.psiUtil.*
-import org.jetbrains.kotlin.psi.psiUtil.isAbstract
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
 
 class InitializationOrder : AbstractKotlinInspection() {
@@ -58,7 +58,7 @@ class InitializationOrder : AbstractKotlinInspection() {
                               isOnTheFly: Boolean): KtVisitorVoid {
         return classOrObjectVisitor { ourClass: KtClassOrObject ->
             val nonDelegates = ourClass.findNonDelegatingProperties()
-            val nonDelegatesQuickLookup = nonDelegates.computeQuickIndexedNameLookup()
+            val nonDelegatesQuickLookup = ourClass.computeQuickIndexedNameLookup()
             val ourFqName = ourClass.fqName?.asString() ?: return@classOrObjectVisitor
             nonDelegates.forEach { prop: KtProperty ->
                 val propName = prop.name ?: return@forEach
@@ -84,11 +84,23 @@ class InitializationOrder : AbstractKotlinInspection() {
         )
     }
 
-    fun createErrorDescription(invalidOrders: List<KtNameReferenceExpression>): String {
+    fun createErrorDescription(invalidOrders: List<DangerousReference>): String {
+
+        val haveInnerInvalid = invalidOrders.joinToString(",") {
+            it.innerReferences.joinToString(",\"", "\"", "\"") { exp -> exp.getReferencedName() }
+        }
+        val innerMessage = if (haveInnerInvalid.isNotBlank()) {
+            "\n(Indirect dangerous references = $haveInnerInvalid)\n"
+        } else {
+            ""
+        }
+
         val invalidOrdersNames = invalidOrders.map {
-            it.getReferencedName()
+            it.mainReference.getReferencedName()
         }.toSet().joinToString("\",\"", prefix = "\"", postfix = "\"")
-        return "Initialization order is invalid for $invalidOrdersNames\nIt can / will result in null at runtime(Due to the JVM)"
+        return "Initialization order is invalid for $invalidOrdersNames\n" +
+                innerMessage +
+                "It can / will result in null at runtime(Due to the JVM)"
     }
 
 
@@ -99,9 +111,6 @@ fun KtClassOrObject.getProperties() = getBody()?.properties.orEmpty()
 fun KtClassOrObject.findNonDelegatingProperties(): List<KtProperty> {
     return getProperties().filterNot { prop -> prop.hasDelegate() }
 }
-
-fun KtProperty.hasNoInitializer() = !hasInitializer()
-fun KtNamedDeclaration.isNotAbstract(): Boolean = !isAbstract()
 
 fun List<KtProperty>.computeQuickIndexedNameLookup(): Map<String, Int> {
     val nonDelegatesQuickLookup: MutableMap<String, Int> = mutableMapOf()
@@ -126,25 +135,102 @@ fun PsiElement.findLocalReferences(
     }
 }
 
+class DangerousReference(
+        val mainReference: KtNameReferenceExpression,
+        val innerReferences: List<KtNameReferenceExpression>)
+
 fun KtProperty.findLocalReferencesForInitializer(
         ourFqNameStart: String,
         nonDelegatesQuickLookup: Set<String>
-): List<KtNameReferenceExpression> {
-    return initializer?.collectDescendantsOfType<KtNameReferenceExpression> { nameRef ->
-        val refFqName = nameRef.resolveMainReferenceToDescriptors().firstOrNull()?.fqNameSafe
-                ?: return@collectDescendantsOfType false
-        return@collectDescendantsOfType refFqName.asString().startsWith(ourFqNameStart) &&
-                nonDelegatesQuickLookup.contains(nameRef.getReferencedName())
+): List<DangerousReference> {
+    return initializer?.collectDescendantsOfType { nameRef: KtNameReferenceExpression ->
+        //skip things that are "ok" / legit.
+        nameRef.isPotentialDangerousReference(
+                ourFqNameStart,
+                nonDelegatesQuickLookup)
+    }?.map {
+        DangerousReference(it,
+                resolveInnerDangerousReferences(
+                        ourFqNameStart,
+                        nonDelegatesQuickLookup,
+                        it.resolveMainReferenceToDescriptors().firstOrNull()))
     } ?: return listOf()
 }
 
-fun List<KtNameReferenceExpression>.resolveInvalidOrders(name: String, order: Map<String, Int>): List<KtNameReferenceExpression> {
-    val ourIndex = order[name] ?: return listOf() //should not return.... :/ ???
-    return filter {
-        val itName = it.getReferencedName()
-        val itOrder = (order[itName] ?: 0)
-        //if we reference something that is declared after us, its an "issue".
-        itOrder > ourIndex
+private fun KtNameReferenceExpression.isPotentialDangerousReference(
+        ourFqNameStart: String,
+        nonDelegatesQuickLookup: Set<String>
+): Boolean {
+    val referre = this.resolveMainReferenceToDescriptors().firstOrNull() ?: return false
+
+    val refFqName = referre.fqNameSafe
+    val isInOurClass = refFqName.asString().startsWith(ourFqNameStart) &&
+            nonDelegatesQuickLookup.contains(getReferencedName())
+    val psi = referre.findPsi()
+    return when (psi) {
+        is KtProperty, is KtFunction -> {
+            return resolveInnerDangerousReferences(
+                    ourFqNameStart,
+                    nonDelegatesQuickLookup,
+                    referre).isNotEmpty()
+        }
+        else -> isInOurClass && !isExtensionDeclaration()
     }
 }
 
+private fun resolveInnerDangerousReferences(
+        ourFqNameStart: String,
+        nonDelegatesQuickLookup: Set<String>,
+        mainDescriptor: DeclarationDescriptor?
+): List<KtNameReferenceExpression> {
+    return when (val psi = mainDescriptor?.findPsi()) {
+        is KtProperty, is KtFunction -> {
+            psi.findLocalReferences(ourFqNameStart, nonDelegatesQuickLookup)
+        }
+        else -> listOf()
+    }
+}
+
+fun List<DangerousReference>.resolveInvalidOrders(
+        name: String,
+        order: Map<String, Int>
+): List<DangerousReference> {
+    val ourIndex = order[name] ?: return listOf() //should not return.... :/ ???
+    return filter { ref ->
+        val isMainRefOk = ref.mainReference.isBefore(ourIndex, order)
+        //if we reference something that is declared after us, its an "issue".
+        !isMainRefOk || ref.innerReferences.isAllNotBefore(ourIndex, order)
+    }
+}
+
+private fun List<KtNameReferenceExpression>.isAllNotBefore(
+        ourIndex: Int,
+        order: Map<String, Int>
+) = !all { it.isBefore(ourIndex, order) }
+
+private fun KtNameReferenceExpression.isBefore(
+        ourIndex: Int,
+        order: Map<String, Int>): Boolean {
+    val itName = getReferencedName()
+    val itOrder = (order[itName] ?: 0)
+    return itOrder < ourIndex
+}
+
+
+fun KtClassOrObject.computeQuickIndexedNameLookup(): Map<String, Int> {
+    val resultingMap = mutableMapOf<String, Int>()
+    val allProps = collectDescendantsOfType<KtProperty>()
+
+    allProps.forEach { prop ->
+        val name = prop.name ?: return@forEach
+        resultingMap[name] = prop.startOffsetInParent
+    }
+
+
+    val allFuns = collectDescendantsOfType<KtFunction>()
+    allFuns.forEach { function ->
+        val name = function.name ?: return@forEach
+        resultingMap[name] = function.startOffsetInParent
+    }
+    return resultingMap
+}

@@ -8,7 +8,12 @@ Examples include
 
 ## Changelog
 
-### 0.0.3
+### 0.4
+- handle extensions better for initialization order.
+- handle 1 level of indirect references for Initialization order.
+
+
+### 0.3
 - avoid repeating names in inspections.
 - exclude synthetic properties for inheritance initialization order (only getter (optionally setter)) since they are only functions
 - reference names in initializationInheritance order.
@@ -17,9 +22,9 @@ Examples include
 - improved rearrange so that it only inspects the initializer, thus are able to work in more cases.  
 
 
-### 0.0.2
+### 0.2
 - fixed a minor issue
 - work on inheritance inspection.
 
-### 0.0.1 
+### 0.1 
 - first version 

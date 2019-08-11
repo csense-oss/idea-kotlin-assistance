@@ -135,7 +135,7 @@ fun List<KtProperty>.computeDependencyDAG(ourFqName: String): MutableVariableNam
                 ourFqName,
                 nonDelegatesQuickLookup.keys)
         localRefs.forEach { ref ->
-            val itName = ref.resolveMainReferenceToDescriptors().firstOrNull()?.name?.identifier
+            val itName = ref.mainReference.resolveMainReferenceToDescriptors().firstOrNull()?.name?.identifier
                     ?: return null
             val refsTo = variableMap[itName]
                     ?: return null
