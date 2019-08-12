@@ -26,8 +26,8 @@ class KtExpressionSuppression(
     }
 
     override fun invoke(project: Project, editor: Editor?, element: PsiElement) {
-        val factory = KtPsiFactory(project)
         val prop = element.findParentAndBeforeFromType<KtBlockExpression>() ?: return
+        val factory = KtPsiFactory(project)
         val annotation = factory.createExpression("@Suppress(\"$shortName\")")
         try {
             prop.first

@@ -27,10 +27,10 @@ class PropertyFunctionSuppressor(
     }
 
     override fun invoke(project: Project, editor: Editor?, element: PsiElement) {
-        val factory = KtPsiFactory(project)
         val prop = element.findParentOfType<KtProperty>()
         val function = element.findParentOfType<KtFunction>()
         val ktElement = prop ?: function ?: return
+        val factory = KtPsiFactory(project)
         ktElement.addAnnotationEntry(factory.createAnnotationEntry("@Suppress(\"$shortName\")"))
     }
 }

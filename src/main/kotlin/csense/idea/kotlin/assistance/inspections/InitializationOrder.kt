@@ -212,7 +212,7 @@ private fun KtNameReferenceExpression.isBefore(
         ourIndex: Int,
         order: Map<String, Int>): Boolean {
     val itName = getReferencedName()
-    val itOrder = (order[itName] ?: 0)
+    val itOrder = (order[itName] ?: Int.MAX_VALUE)
     return itOrder < ourIndex
 }
 
