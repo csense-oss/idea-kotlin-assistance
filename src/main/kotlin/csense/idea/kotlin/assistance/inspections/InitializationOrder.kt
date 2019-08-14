@@ -86,9 +86,14 @@ class InitializationOrder : AbstractKotlinInspection() {
 
     fun createErrorDescription(invalidOrders: List<DangerousReference>): String {
 
-        val haveInnerInvalid = invalidOrders.joinToString(",") {
-            it.innerReferences.joinToString(",\"", "\"", "\"") { exp -> exp.getReferencedName() }
-        }
+        val allInvalid = invalidOrders.map {
+            it.innerReferences
+        }.flatten().map { it.getReferencedName() }.distinct()
+
+
+        val haveInnerInvalid =
+                allInvalid.joinToString(",\"", "\"", "\"")
+
         val innerMessage = if (haveInnerInvalid.isNotBlank()) {
             "\n(Indirect dangerous references = $haveInnerInvalid)\n"
         } else {
@@ -97,7 +102,7 @@ class InitializationOrder : AbstractKotlinInspection() {
 
         val invalidOrdersNames = invalidOrders.map {
             it.mainReference.getReferencedName()
-        }.toSet().joinToString("\",\"", prefix = "\"", postfix = "\"")
+        }.distinct().joinToString("\",\"", prefix = "\"", postfix = "\"")
         return "Initialization order is invalid for $invalidOrdersNames\n" +
                 innerMessage +
                 "It can / will result in null at runtime(Due to the JVM)"
@@ -197,23 +202,27 @@ fun List<DangerousReference>.resolveInvalidOrders(
 ): List<DangerousReference> {
     val ourIndex = order[name] ?: return listOf() //should not return.... :/ ???
     return filter { ref ->
-        val isMainRefOk = ref.mainReference.isBefore(ourIndex, order)
-        //if we reference something that is declared after us, its an "issue".
-        !isMainRefOk || ref.innerReferences.isAllNotBefore(ourIndex, order)
+        val isMainRefOk = ref.mainReference.isBeforeOrFunction(ourIndex, order)
+        //if we reference something that is declared after us, its an "issue". only if it is not a function
+        !isMainRefOk || ref.innerReferences.isAllNotBeforeOrFunction(ourIndex, order)
     }
 }
 
-private fun List<KtNameReferenceExpression>.isAllNotBefore(
+private fun List<KtNameReferenceExpression>.isAllNotBeforeOrFunction(
         ourIndex: Int,
         order: Map<String, Int>
-) = !all { it.isBefore(ourIndex, order) }
+) = !all { it.isBeforeOrFunction(ourIndex, order) }
 
-private fun KtNameReferenceExpression.isBefore(
+private fun KtNameReferenceExpression.isBeforeOrFunction(
         ourIndex: Int,
         order: Map<String, Int>): Boolean {
     val itName = getReferencedName()
     val itOrder = (order[itName] ?: Int.MAX_VALUE)
-    return itOrder < ourIndex
+    return itOrder < ourIndex || this.isFunction()
+}
+
+fun KtNameReferenceExpression.isFunction(): Boolean {
+    return this.resolveMainReferenceToDescriptors().firstOrNull()?.findPsi() as? KtFunction != null
 }
 
 

@@ -6,7 +6,7 @@ plugins {
 }
 
 group = "csense-idea"
-version = "0.4"
+version = "0.5"
 // See https://github.com/JetBrains/gradle-intellij-plugin/
 
 intellij {
@@ -26,8 +26,7 @@ dependencies {
 tasks.getByName<org.jetbrains.intellij.tasks.PatchPluginXmlTask>("patchPluginXml") {
     changeNotes("""
         <ul>
-            <li> Handle extensions better for initialization order.</li>
-            <li> Handle 1 level of indirect references for Initialization order.</li>
+            <li>Fixed bugs with order (functions locations does not matter, as its the variables only) & indirect references duplicated names</li>
          </ul>
       """)
 }
