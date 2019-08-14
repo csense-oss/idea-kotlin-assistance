@@ -8,6 +8,9 @@ Examples include
 
 ## Changelog
 
+### 0.5
+- Fixed bugs with order (functions locations does not matter, as its the variables only) & indirect references duplicated names
+
 ### 0.4
 - handle extensions better for initialization order.
 - handle 1 level of indirect references for Initialization order.
