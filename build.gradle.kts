@@ -6,7 +6,7 @@ plugins {
 }
 
 group = "csense-idea"
-version = "0.5"
+version = "0.6"
 // See https://github.com/JetBrains/gradle-intellij-plugin/
 
 intellij {
@@ -26,7 +26,7 @@ dependencies {
 tasks.getByName<org.jetbrains.intellij.tasks.PatchPluginXmlTask>("patchPluginXml") {
     changeNotes("""
         <ul>
-            <li>Fixed bugs with order (functions locations does not matter, as its the variables only) & indirect references duplicated names</li>
+            <li>Caching added to improve performance drastically.</li>
          </ul>
       """)
 }

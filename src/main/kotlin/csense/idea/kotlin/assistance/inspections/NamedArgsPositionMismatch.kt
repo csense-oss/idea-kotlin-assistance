@@ -11,6 +11,7 @@ import org.jetbrains.kotlin.idea.inspections.*
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.resolve.annotations.*
 import org.jetbrains.kotlin.types.*
+import kotlin.system.*
 
 class NamedArgsPositionMismatch : AbstractKotlinInspection() {
 
@@ -55,38 +56,41 @@ class NamedArgsPositionMismatch : AbstractKotlinInspection() {
     override fun buildVisitor(holder: ProblemsHolder,
                               isOnTheFly: Boolean): KtVisitorVoid {
         return callExpressionVisitor {
-            val call: KtCallExpression = it
-            if (call.valueArguments.isEmpty()) {
-                //no arguments to check
-                return@callExpressionVisitor
-            }
-
-            val callingFunction = call.resolveToCall()?.resultingDescriptor ?: return@callExpressionVisitor
-            val usedNames = call.findInvocationArgumentNames()
-            val originalParameterNames = callingFunction.findOriginalMethodArgumentNames()
-            if (usedNames.size > originalParameterNames.size) {
-                //invalid code, just skip. (invoking with more args than there is).
-                return@callExpressionVisitor
-            }
-            val misMatches = computeMismatchingNames(usedNames, originalParameterNames)
-            if (misMatches.isNotEmpty()) {
-                reportProblem(call, misMatches, holder)
-            }
-
-            call.lambdaArguments.forEach { lambdaArg ->
-
-                val argName = lambdaArg.getLambdaExpression() ?: return@forEach
-                val usedLambdaArgumentNames = argName.valueParameters.map { parms -> parms.name }
-
-                val namedArgs = callingFunction.valueParameters[0].type.arguments.map { typeArgs ->
-                    typeArgs.type.findLambdaParameterName()
-                }
-                val lambdaMisMatch = computeMismatchingNames(usedLambdaArgumentNames, namedArgs)
-                if (lambdaMisMatch.isNotEmpty()) {
-                    reportLambdaProblem(call, lambdaMisMatch, holder)
+            val time = measureTimeMillis {
+                val call: KtCallExpression = it
+                if (call.valueArguments.isEmpty()) {
+                    //no arguments to check
+                    return@callExpressionVisitor
                 }
 
+                val callingFunction = call.resolveToCall()?.resultingDescriptor ?: return@callExpressionVisitor
+                val usedNames = call.findInvocationArgumentNames()
+                val originalParameterNames = callingFunction.findOriginalMethodArgumentNames()
+                if (usedNames.size > originalParameterNames.size) {
+                    //invalid code, just skip. (invoking with more args than there is).
+                    return@callExpressionVisitor
+                }
+                val misMatches = computeMismatchingNames(usedNames, originalParameterNames)
+                if (misMatches.isNotEmpty()) {
+                    reportProblem(call, misMatches, holder)
+                }
+
+                call.lambdaArguments.forEach { lambdaArg ->
+
+                    val argName = lambdaArg.getLambdaExpression() ?: return@forEach
+                    val usedLambdaArgumentNames = argName.valueParameters.map { parms -> parms.name }
+
+                    val namedArgs = callingFunction.valueParameters[0].type.arguments.map { typeArgs ->
+                        typeArgs.type.findLambdaParameterName()
+                    }
+                    val lambdaMisMatch = computeMismatchingNames(usedLambdaArgumentNames, namedArgs)
+                    if (lambdaMisMatch.isNotEmpty()) {
+                        reportLambdaProblem(call, lambdaMisMatch, holder)
+                    }
+
+                }
             }
+//            println("name args order took $time ms")
         }
     }
 
