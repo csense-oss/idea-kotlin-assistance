@@ -14,7 +14,6 @@ import org.jetbrains.kotlin.js.resolve.diagnostics.*
 import org.jetbrains.kotlin.lexer.*
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.psi.psiUtil.*
-import kotlin.system.*
 
 class InheritanceInitializationOrder : AbstractKotlinInspection() {
 

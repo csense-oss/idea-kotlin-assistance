@@ -69,7 +69,7 @@ class SimpleLRUCache<Key, Value>(private var cacheSize: Int) {
         return if (condition(key, value)) {
             value
         } else {
-            remove(key);
+            remove(key)
             null
         }
     }

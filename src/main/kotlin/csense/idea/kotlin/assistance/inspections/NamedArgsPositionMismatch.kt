@@ -11,7 +11,6 @@ import org.jetbrains.kotlin.idea.inspections.*
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.resolve.annotations.*
 import org.jetbrains.kotlin.types.*
-import kotlin.system.*
 
 class NamedArgsPositionMismatch : AbstractKotlinInspection() {
 

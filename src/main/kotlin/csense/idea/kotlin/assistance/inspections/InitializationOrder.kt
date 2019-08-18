@@ -155,7 +155,7 @@ fun PsiElement.findLocalReferences(
         ourFqNameStart: String,
         nonDelegatesQuickLookup: Set<String>
 ): List<KtNameReferenceExpression> {
-    return collectDescendantsOfType<KtNameReferenceExpression> { nameRef ->
+    return collectDescendantsOfType { nameRef ->
         val refFqName = nameRef.resolveMainReferenceToDescriptors().firstOrNull()?.fqNameSafe
                 ?: return@collectDescendantsOfType false
         return@collectDescendantsOfType refFqName.asString().startsWith(ourFqNameStart) &&
@@ -194,8 +194,7 @@ private fun KtNameReferenceExpression.isPotentialDangerousReference(
     val refFqName = referre.fqNameSafe
     val isInOurClass = refFqName.asString().startsWith(ourFqNameStart) &&
             nonDelegatesQuickLookup.contains(getReferencedName())
-    val psi = referre.findPsi()
-    return when (psi) {
+    return when (referre.findPsi()) {
         is KtProperty, is KtFunction -> {
             return resolveInnerDangerousReferences(
                     ourFqNameStart,
