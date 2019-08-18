@@ -4,6 +4,7 @@ import com.intellij.codeHighlighting.*
 import com.intellij.codeInspection.*
 import com.intellij.psi.*
 import csense.idea.kotlin.assistance.*
+import csense.idea.kotlin.assistance.cache.*
 import csense.idea.kotlin.assistance.suppression.*
 import org.jetbrains.kotlin.idea.core.*
 import org.jetbrains.kotlin.idea.inspections.*
@@ -63,28 +64,22 @@ class InheritanceInitializationOrder : AbstractKotlinInspection() {
     override fun buildVisitor(holder: ProblemsHolder,
                               isOnTheFly: Boolean): KtVisitorVoid {
         return classVisitor { ourClass: KtClass ->
-            val time = measureTimeMillis {
-                val ourFqName = ourClass.fqName?.asString() ?: return@classVisitor
-                val isAbstractOrOpen = ourClass.isAbstractOrOpen()
-                val isInheriting = ourClass.superTypeListEntries.isNotEmpty()
+            val ourFqName = ourClass.fqName?.asString() ?: return@classVisitor
+            val isAbstractOrOpen = ourClass.isAbstractOrOpen()
+            val isInheriting = ourClass.superTypeListEntries.isNotEmpty()
 
-                if (!isInheriting && !isAbstractOrOpen) {
-                    //we are not using inheritance bail out
-                    return@classVisitor
-                }
-                //case child class
-                if (isInheriting) {
-                    println("child class handling")
-                    handleChildClass(ourClass, ourFqName, holder)
-                }
-                //case base class (potentially child as well)
-
-                if (isAbstractOrOpen) {
-                    println("base class handling")
-                    handleBaseClass(ourClass, ourFqName, holder)
-                }
+            if (!isInheriting && !isAbstractOrOpen) {
+                //we are not using inheritance bail out
+                return@classVisitor
             }
-            println("inheritance took $time ms")
+            //case child class
+            if (isInheriting) {
+                handleChildClass(ourClass, ourFqName, holder)
+            }
+            //case base class (potentially child as well)
+            if (isAbstractOrOpen) {
+                handleBaseClass(ourClass, ourFqName, holder)
+            }
         }
     }
 
@@ -131,13 +126,11 @@ class InheritanceInitializationOrder : AbstractKotlinInspection() {
                 name.getReferencedName()
             }
         }.flatten().toSet()
-        //TODO cache this
+
         val cachedProperties = propertiesOverridingCache[ourClass]
         propertiesOverridden.forEach {
-            println("looking at prop")
             val cachedProperty = cachedProperties?.cached?.get(it)
             if (cachedProperty != null && cachedProperty.second == it.modificationStamp) {
-                println("uses cache for property")
                 if (cachedProperty.first.isNotEmpty()) {
                     holder.registerProblem(it,
                             "You are using a constructor provided argument for an overridden property\n" +
@@ -148,10 +141,9 @@ class InheritanceInitializationOrder : AbstractKotlinInspection() {
                 }
                 return@forEach
             }
-            println("NOT uses cache for property $cachedProperty")
-            val ent = propertiesOverridingCache.getOrPut(ourClass, {
+            val ent = propertiesOverridingCache.getOrPut(ourClass) {
                 PropertiesOverridingCacheData(mutableMapOf())
-            })
+            }
             val usesConstructorParameterInOverridden = it.findLocalReferences(ourFqName, toLookFor)
             if (usesConstructorParameterInOverridden.isNotEmpty() && superProblemsNames.contains(it.name ?: "")) {
                 val refNames = usesConstructorParameterInOverridden.map { exp -> exp.getReferencedName() }.distinct()
@@ -169,10 +161,8 @@ class InheritanceInitializationOrder : AbstractKotlinInspection() {
 
         val cachedFunctions = functionsOverridingCache[ourClass]
         functionsOverriding.forEach { function ->
-            println("looking at fnc")
             val haveCachedFnc = cachedFunctions?.cached?.get(function)
             if (haveCachedFnc != null && haveCachedFnc.second == function.modificationStamp) {
-                println("uses cache for functions overriden")
                 if (haveCachedFnc.first.isEmpty()) {
                     return@forEach//no problems :)
                 }
@@ -182,10 +172,9 @@ class InheritanceInitializationOrder : AbstractKotlinInspection() {
                                 "References: \"${refNames.joinToString("\",\"")}\";\n" +
                                 "This will cause a NullPointerException, since it is used in the base class initialization")
             } else {
-                val ent = functionsOverridingCache.getOrPut(ourClass, {
+                val ent = functionsOverridingCache.getOrPut(ourClass) {
                     FunctionsOverridingCacheData(mutableMapOf())
-                })
-                println("NOT uses cache for functions overridden; is there = $haveCachedFnc ")
+                }
                 val usesConstructorParameterInOverridden = function.findLocalReferences(ourFqName, toLookFor)
                 if (usesConstructorParameterInOverridden.isNotEmpty() && superProblemsNames.contains(function.name
                                 ?: "")) {
@@ -202,18 +191,16 @@ class InheritanceInitializationOrder : AbstractKotlinInspection() {
         }
 
     }
-    //TODO limit this cache
 
     class PropertiesOverridingCacheData(
             val cached: MutableMap<KtProperty, Pair<List<String>, Long>>)
 
-    private val propertiesOverridingCache = mutableMapOf<KtClass, PropertiesOverridingCacheData>()
-    //TODO limit this cache
+    private val propertiesOverridingCache = SimpleLRUCache<KtClass, PropertiesOverridingCacheData>(500)//todo setting ?
 
     class FunctionsOverridingCacheData(
             val cached: MutableMap<KtNamedFunction, Pair<List<String>, Long>>)
 
-    private val functionsOverridingCache = mutableMapOf<KtClass, FunctionsOverridingCacheData>()
+    private val functionsOverridingCache = SimpleLRUCache<KtClass, FunctionsOverridingCacheData>(500)
 
     fun computeBaseClassDangerousStarts(
             theClass: KtClass,
@@ -221,7 +208,6 @@ class InheritanceInitializationOrder : AbstractKotlinInspection() {
     ): Map<KtProperty, List<KtNameReferenceExpression>> {
         val inCache = superClassDangerousStateCache[theClass]
         if (inCache?.second == theClass.modificationStamp) {
-            println("uses cache.")
             return inCache.first
         }
         val nonDelegates = theClass.findNonDelegatingProperties().filter {
@@ -245,14 +231,14 @@ class InheritanceInitializationOrder : AbstractKotlinInspection() {
                 resultingMap[it] = references
             }
         }
-        superClassDangerousStateCache[theClass] = Pair(resultingMap, theClass.modificationStamp)
+        superClassDangerousStateCache.put(theClass, Pair(resultingMap, theClass.modificationStamp))
         return resultingMap
     }
 
-    //TODO limit this cache
+
     private val superClassDangerousStateCache:
-            MutableMap<KtClass, Pair<Map<KtProperty, List<KtNameReferenceExpression>>, Long>> =
-            mutableMapOf()
+            SimpleLRUCache<KtClass, Pair<Map<KtProperty, List<KtNameReferenceExpression>>, Long>> =
+            SimpleLRUCache(500)
 }
 
 val KtClass.superClass: KtClass?

@@ -27,6 +27,7 @@ tasks.getByName<org.jetbrains.intellij.tasks.PatchPluginXmlTask>("patchPluginXml
     changeNotes("""
         <ul>
             <li>Caching added to improve performance drastically.</li>
+            <li>Fixed bug with invalid initialization order and "class" references.</li>
          </ul>
       """)
 }

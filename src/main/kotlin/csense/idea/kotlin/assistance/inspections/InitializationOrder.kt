@@ -4,6 +4,7 @@ import com.intellij.codeHighlighting.*
 import com.intellij.codeInspection.*
 import com.intellij.psi.*
 import csense.idea.kotlin.assistance.*
+import csense.idea.kotlin.assistance.cache.*
 import csense.idea.kotlin.assistance.quickfixes.*
 import csense.idea.kotlin.assistance.suppression.*
 import org.jetbrains.kotlin.descriptors.*
@@ -13,7 +14,6 @@ import org.jetbrains.kotlin.js.resolve.diagnostics.*
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.psi.psiUtil.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
-import kotlin.system.*
 
 class InitializationOrder : AbstractKotlinInspection() {
 
@@ -58,42 +58,38 @@ class InitializationOrder : AbstractKotlinInspection() {
     override fun buildVisitor(holder: ProblemsHolder,
                               isOnTheFly: Boolean): KtVisitorVoid {
         return classOrObjectVisitor { ourClass: KtClassOrObject ->
-            val time = measureTimeMillis {
-                val cached = propertyCache[ourClass]
-                val nonDelegates = ourClass.findNonDelegatingProperties()
-                val nonDelegatesQuickLookup = ourClass.computeQuickIndexedNameLookup()
-                val ourFqName = ourClass.fqName?.asString() ?: return@classOrObjectVisitor
-                nonDelegates.forEach { prop: KtProperty ->
-                    val innerCached = cached?.properties?.get(prop)
-                    val invalidOrders: List<DangerousReference> = if (
-                            innerCached != null &&
-                            innerCached.second == prop.modificationStamp
-                            && cached.timestampOfClassOrObject == ourClass.modificationStamp) {
-                        println("uses cache for init order")
-                        innerCached.first
-                    } else {
-                        val propName = prop.name ?: return@forEach
-                        val localRefs = prop.findLocalReferencesForInitializer(
-                                ourFqName,
-                                nonDelegatesQuickLookup.keys)
-                        localRefs.resolveInvalidOrders(propName, nonDelegatesQuickLookup).apply {
-                            if (propertyCache[ourClass]?.timestampOfClassOrObject != ourClass.modificationStamp) {
-                                propertyCache.remove(ourClass)
-                            }
-                            propertyCache.getOrPut(ourClass) {
-                                PropertyCacheData(mutableMapOf(), ourClass.modificationStamp)
-                            }.properties[prop] = Pair(this, prop.modificationStamp)
+            val cached = propertyCache[ourClass]
+            val nonDelegates = ourClass.findNonDelegatingProperties()
+            val nonDelegatesQuickLookup = ourClass.computeQuickIndexedNameLookup()
+            val ourFqName = ourClass.fqName?.asString() ?: return@classOrObjectVisitor
+            nonDelegates.forEach { prop: KtProperty ->
+                val innerCached = cached?.properties?.get(prop)
+                val invalidOrders: List<DangerousReference> = if (
+                        innerCached != null &&
+                        innerCached.second == prop.modificationStamp
+                        && cached.timestampOfClassOrObject == ourClass.modificationStamp) {
+                    innerCached.first
+                } else {
+                    val propName = prop.name ?: return@forEach
+                    val localRefs = prop.findLocalReferencesForInitializer(
+                            ourFqName,
+                            nonDelegatesQuickLookup.keys)
+                    localRefs.resolveInvalidOrders(propName, nonDelegatesQuickLookup).apply {
+                        if (propertyCache[ourClass]?.timestampOfClassOrObject != ourClass.modificationStamp) {
+                            propertyCache.remove(ourClass)
                         }
-                    }
-                    if (invalidOrders.isNotEmpty()) {
-                        holder.registerProblem(prop,
-                                createErrorDescription(invalidOrders),
-                                *createQuickFixes(prop, ourClass)
-                        )
+                        propertyCache.getOrPut(ourClass) {
+                            PropertyCacheData(mutableMapOf(), ourClass.modificationStamp)
+                        }.properties[prop] = Pair(this, prop.modificationStamp)
                     }
                 }
+                if (invalidOrders.isNotEmpty()) {
+                    holder.registerProblem(prop,
+                            createErrorDescription(invalidOrders),
+                            *createQuickFixes(prop, ourClass)
+                    )
+                }
             }
-            println("init order took $time ms")
         }
     }
 
@@ -102,7 +98,7 @@ class InitializationOrder : AbstractKotlinInspection() {
             val timestampOfClassOrObject: Long
     )
 
-    private val propertyCache: MutableMap<KtClassOrObject, PropertyCacheData> = mutableMapOf()
+    private val propertyCache: SimpleLRUCache<KtClassOrObject, PropertyCacheData> = SimpleLRUCache(1000)
 
     fun createQuickFixes(property: KtProperty, classObj: KtClassOrObject): Array<LocalQuickFix> {
         return arrayOf(
@@ -206,6 +202,8 @@ private fun KtNameReferenceExpression.isPotentialDangerousReference(
                     nonDelegatesQuickLookup,
                     referre).isNotEmpty()
         }
+        //we are a type argument../ ref. (not a problem)
+        is KtClass, is KtClassOrObject -> false
         else -> isInOurClass && !isExtensionDeclaration()
     }
 }
