@@ -28,6 +28,7 @@ tasks.getByName<org.jetbrains.intellij.tasks.PatchPluginXmlTask>("patchPluginXml
         <ul>
             <li>Fixed issue where constructor argument names were same as field names in initialization order</li>
             <li>Fixed issues with "regular properties" vs "getter" (synthetic) properties in initialization order</li>
+            <li>Fixed issues message for initialization order</li>
          </ul>
       """)
 }

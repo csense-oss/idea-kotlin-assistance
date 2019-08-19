@@ -7,6 +7,8 @@ import csense.idea.kotlin.assistance.*
 import csense.idea.kotlin.assistance.cache.*
 import csense.idea.kotlin.assistance.quickfixes.*
 import csense.idea.kotlin.assistance.suppression.*
+import csense.kotlin.extensions.*
+import csense.kotlin.extensions.primitives.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.idea.inspections.*
 import org.jetbrains.kotlin.idea.references.*
@@ -115,10 +117,10 @@ class InitializationOrder : AbstractKotlinInspection() {
 
 
         val haveInnerInvalid =
-                allInvalid.joinToString(",\"", "\"", "\"")
+                allInvalid.joinToString(",\"")
 
         val innerMessage = if (haveInnerInvalid.isNotBlank()) {
-            "\n(Indirect dangerous references = $haveInnerInvalid)\n"
+            "\n(Indirect dangerous references = \"$haveInnerInvalid\")\n"
         } else {
             ""
         }
