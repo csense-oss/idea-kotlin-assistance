@@ -175,31 +175,49 @@ fun KtProperty.findLocalReferencesForInitializer(
         //skip things that are "ok" / legit.
         nameRef.isPotentialDangerousReference(
                 ourFqNameStart,
-                nonDelegatesQuickLookup)
+                nonDelegatesQuickLookup,
+                this.name)
     }?.map {
         DangerousReference(it,
                 resolveInnerDangerousReferences(
                         ourFqNameStart,
                         nonDelegatesQuickLookup,
-                        it.resolveMainReferenceToDescriptors().firstOrNull()))
+                        it.resolveMainReferenceToDescriptors().firstOrNull()?.findPsi()))
     } ?: return listOf()
 }
 
 private fun KtNameReferenceExpression.isPotentialDangerousReference(
         ourFqNameStart: String,
-        nonDelegatesQuickLookup: Set<String>
+        nonDelegatesQuickLookup: Set<String>,
+        fromName: String?
 ): Boolean {
     val referre = this.resolveMainReferenceToDescriptors().firstOrNull() ?: return false
 
     val refFqName = referre.fqNameSafe
+    val refName = referre.name.asString()
+    if (refName == fromName && refFqName.asString().startsWith(ourFqNameStart)) {
+        return false //self reference: either the compiler will fail (field initialized to itself) or its a field with the same name as a parameter..
+    }
     val isInOurClass = refFqName.asString().startsWith(ourFqNameStart) &&
             nonDelegatesQuickLookup.contains(getReferencedName())
-    return when (referre.findPsi()) {
-        is KtProperty, is KtFunction -> {
+    return when (val psi = referre.findPsi()) {
+        is KtProperty -> {
+            //no getter => real "property"
+            if (psi.getter == null) {
+                true
+            } else {
+                //synthetic property, just like a function.
+                return resolveInnerDangerousReferences(
+                        ourFqNameStart,
+                        nonDelegatesQuickLookup,
+                        psi).isNotEmpty()
+            }
+        }
+        is KtFunction -> {
             return resolveInnerDangerousReferences(
                     ourFqNameStart,
                     nonDelegatesQuickLookup,
-                    referre).isNotEmpty()
+                    psi).isNotEmpty()
         }
         //we are a type argument../ ref. (not a problem)
         is KtClass, is KtClassOrObject -> false
@@ -210,11 +228,11 @@ private fun KtNameReferenceExpression.isPotentialDangerousReference(
 private fun resolveInnerDangerousReferences(
         ourFqNameStart: String,
         nonDelegatesQuickLookup: Set<String>,
-        mainDescriptor: DeclarationDescriptor?
+        mainPsi: PsiElement?
 ): List<KtNameReferenceExpression> {
-    return when (val psi = mainDescriptor?.findPsi()) {
+    return when (mainPsi) {
         is KtProperty, is KtFunction -> {
-            psi.findLocalReferences(ourFqNameStart, nonDelegatesQuickLookup)
+            mainPsi.findLocalReferences(ourFqNameStart, nonDelegatesQuickLookup)
         }
         else -> listOf()
     }

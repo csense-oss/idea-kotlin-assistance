@@ -6,7 +6,7 @@ plugins {
 }
 
 group = "csense-idea"
-version = "0.6"
+version = "0.7"
 // See https://github.com/JetBrains/gradle-intellij-plugin/
 
 intellij {
@@ -26,8 +26,8 @@ dependencies {
 tasks.getByName<org.jetbrains.intellij.tasks.PatchPluginXmlTask>("patchPluginXml") {
     changeNotes("""
         <ul>
-            <li>Caching added to improve performance drastically.</li>
-            <li>Fixed bug with invalid initialization order and "class" references.</li>
+            <li>Fixed issue where constructor argument names were same as field names in initialization order</li>
+            <li>Fixed issues with "regular properties" vs "getter" (synthetic) properties in initialization order</li>
          </ul>
       """)
 }
