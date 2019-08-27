@@ -17,8 +17,6 @@ intellij {
 
 repositories {
     jcenter()
-    //until ds is in jcenter
-    maven(url = "https://dl.bintray.com/csense-oss/csense-kotlin")
 }
 
 dependencies {
@@ -29,7 +27,9 @@ dependencies {
 tasks.getByName<org.jetbrains.intellij.tasks.PatchPluginXmlTask>("patchPluginXml") {
     changeNotes("""
         <ul>
-            <li></li>
+        <ul>
+            <li>fixed for constants (does not cause an initialization issue..)</li>
+            <li>use of csense kotlin - ds </li>
          </ul>
       """)
 }

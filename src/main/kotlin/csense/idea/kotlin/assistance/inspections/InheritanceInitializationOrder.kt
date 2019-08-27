@@ -4,8 +4,8 @@ import com.intellij.codeHighlighting.*
 import com.intellij.codeInspection.*
 import com.intellij.psi.*
 import csense.idea.kotlin.assistance.*
-import csense.idea.kotlin.assistance.cache.*
 import csense.idea.kotlin.assistance.suppression.*
+import csense.kotlin.ds.cache.*
 import org.jetbrains.kotlin.idea.core.*
 import org.jetbrains.kotlin.idea.inspections.*
 import org.jetbrains.kotlin.idea.refactoring.*

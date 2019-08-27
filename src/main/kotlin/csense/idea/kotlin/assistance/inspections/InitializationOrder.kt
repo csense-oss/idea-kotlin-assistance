@@ -4,18 +4,35 @@ import com.intellij.codeHighlighting.*
 import com.intellij.codeInspection.*
 import com.intellij.psi.*
 import csense.idea.kotlin.assistance.*
-import csense.idea.kotlin.assistance.cache.*
 import csense.idea.kotlin.assistance.quickfixes.*
 import csense.idea.kotlin.assistance.suppression.*
-import csense.kotlin.extensions.*
-import csense.kotlin.extensions.primitives.*
-import org.jetbrains.kotlin.descriptors.*
+import csense.kotlin.ds.cache.*
 import org.jetbrains.kotlin.idea.inspections.*
+import org.jetbrains.kotlin.idea.intentions.loopToCallChain.*
 import org.jetbrains.kotlin.idea.references.*
 import org.jetbrains.kotlin.js.resolve.diagnostics.*
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.psi.psiUtil.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
+import kotlin.collections.List
+import kotlin.collections.Map
+import kotlin.collections.MutableMap
+import kotlin.collections.Set
+import kotlin.collections.all
+import kotlin.collections.distinct
+import kotlin.collections.filter
+import kotlin.collections.filterNot
+import kotlin.collections.firstOrNull
+import kotlin.collections.flatten
+import kotlin.collections.forEach
+import kotlin.collections.forEachIndexed
+import kotlin.collections.isNotEmpty
+import kotlin.collections.joinToString
+import kotlin.collections.listOf
+import kotlin.collections.map
+import kotlin.collections.mutableMapOf
+import kotlin.collections.orEmpty
+import kotlin.collections.set
 
 class InitializationOrder : AbstractKotlinInspection() {
 
@@ -223,7 +240,7 @@ private fun KtNameReferenceExpression.isPotentialDangerousReference(
         }
         //we are a type argument../ ref. (not a problem)
         is KtClass, is KtClassOrObject -> false
-        else -> isInOurClass && !isExtensionDeclaration()
+        else -> isInOurClass && !isExtensionDeclaration() && !isConstant()
     }
 }
 
