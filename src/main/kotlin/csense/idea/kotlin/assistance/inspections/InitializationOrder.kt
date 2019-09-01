@@ -219,6 +219,9 @@ private fun KtNameReferenceExpression.isPotentialDangerousReference(
     }
     val isInOurClass = refFqName.asString().startsWith(ourFqNameStart) &&
             nonDelegatesQuickLookup.contains(getReferencedName())
+    if (!isInOurClass) {
+        return false
+    }
     return when (val psi = referre.findPsi()) {
         is KtProperty -> {
             //no getter => real "property"
@@ -240,7 +243,7 @@ private fun KtNameReferenceExpression.isPotentialDangerousReference(
         }
         //we are a type argument../ ref. (not a problem)
         is KtClass, is KtClassOrObject -> false
-        else -> isInOurClass && !isExtensionDeclaration() && !isConstant()
+        else -> !isExtensionDeclaration() && !isConstant()
     }
 }
 
