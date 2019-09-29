@@ -6,7 +6,7 @@ plugins {
 }
 
 group = "csense-idea"
-version = "0.8"
+version = "0.9"
 // See https://github.com/JetBrains/gradle-intellij-plugin/
 
 intellij {
@@ -28,8 +28,7 @@ tasks.getByName<org.jetbrains.intellij.tasks.PatchPluginXmlTask>("patchPluginXml
     changeNotes("""
         <ul>
         <ul>
-            <li>fixed for constants (does not cause an initialization issue..)</li>
-            <li>use of csense kotlin - ds </li>
+            <li>Fixed issues with naming and not necessarily fields... </li>
          </ul>
       """)
 }

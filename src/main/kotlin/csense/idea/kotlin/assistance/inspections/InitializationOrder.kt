@@ -8,30 +8,11 @@ import csense.idea.kotlin.assistance.quickfixes.*
 import csense.idea.kotlin.assistance.suppression.*
 import csense.kotlin.ds.cache.*
 import org.jetbrains.kotlin.idea.inspections.*
-import org.jetbrains.kotlin.idea.intentions.loopToCallChain.*
 import org.jetbrains.kotlin.idea.references.*
 import org.jetbrains.kotlin.js.resolve.diagnostics.*
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.psi.psiUtil.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
-import kotlin.collections.List
-import kotlin.collections.Map
-import kotlin.collections.MutableMap
-import kotlin.collections.Set
-import kotlin.collections.all
-import kotlin.collections.distinct
-import kotlin.collections.filter
-import kotlin.collections.filterNot
-import kotlin.collections.firstOrNull
-import kotlin.collections.flatten
-import kotlin.collections.forEach
-import kotlin.collections.forEachIndexed
-import kotlin.collections.isNotEmpty
-import kotlin.collections.joinToString
-import kotlin.collections.listOf
-import kotlin.collections.map
-import kotlin.collections.mutableMapOf
-import kotlin.collections.orEmpty
 import kotlin.collections.set
 
 class InitializationOrder : AbstractKotlinInspection() {
@@ -174,7 +155,7 @@ fun PsiElement.findLocalReferences(
         ourFqNameStart: String,
         nonDelegatesQuickLookup: Set<String>
 ): List<KtNameReferenceExpression> {
-    return collectDescendantsOfType { nameRef ->
+    return collectDescendantsOfType { nameRef: KtNameReferenceExpression ->
         val refFqName = nameRef.resolveMainReferenceToDescriptors().firstOrNull()?.fqNameSafe
                 ?: return@collectDescendantsOfType false
         return@collectDescendantsOfType refFqName.asString().startsWith(ourFqNameStart) &&
@@ -224,15 +205,23 @@ private fun KtNameReferenceExpression.isPotentialDangerousReference(
     }
     return when (val psi = referre.findPsi()) {
         is KtProperty -> {
-            //no getter => real "property"
-            if (psi.getter == null) {
-                true
-            } else {
+            //no getter / setter => real "property"
+            // (if no getter is specified, it will be synthesized if a setter is there).
+            return if (psi.getter != null) {
                 //synthetic property, just like a function.
-                return resolveInnerDangerousReferences(
+                resolveInnerDangerousReferences(
                         ourFqNameStart,
                         nonDelegatesQuickLookup,
-                        psi).isNotEmpty()
+                        psi.getter).isNotEmpty()
+            } else if (psi.setter != null) {
+                //setter but no getter ? then only look at the initializer.
+                resolveInnerDangerousReferences(
+                        ourFqNameStart,
+                        nonDelegatesQuickLookup,
+                        psi.initializer).isNotEmpty()
+            } else {
+                //there are no getter /setter so its a raw property
+                true
             }
         }
         is KtFunction -> {
@@ -242,8 +231,9 @@ private fun KtNameReferenceExpression.isPotentialDangerousReference(
                     psi).isNotEmpty()
         }
         //we are a type argument../ ref. (not a problem)
-        is KtClass, is KtClassOrObject -> false
-        else -> !isExtensionDeclaration() && !isConstant()
+        //only functions and "properties" are dangerous together.
+//        is KtClass, is KtClassOrObject -> false
+        else -> false
     }
 }
 
@@ -287,6 +277,15 @@ private fun KtNameReferenceExpression.isBeforeOrFunction(
 
 fun KtNameReferenceExpression.isFunction(): Boolean {
     return this.resolveMainReferenceToDescriptors().firstOrNull()?.findPsi() as? KtFunction != null
+}
+
+fun KtNameReferenceExpression.isProperty(): Boolean {
+    return findPsi() as? KtProperty != null
+}
+
+fun KtNameReferenceExpression.findPsi(): PsiElement? {
+    val referre = this.resolveMainReferenceToDescriptors().firstOrNull() ?: return null
+    return referre.findPsi()
 }
 
 
