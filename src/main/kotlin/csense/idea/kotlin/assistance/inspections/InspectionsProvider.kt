@@ -7,7 +7,8 @@ class InspectionsProvider : InspectionToolProvider {
         return arrayOf(
                 InitializationOrder::class.java,
                 NamedArgsPositionMismatch::class.java,
-                InheritanceInitializationOrder::class.java)
+                InheritanceInitializationOrder::class.java,
+                PotentialDangerousReturn::class.java)
     }
 
 }

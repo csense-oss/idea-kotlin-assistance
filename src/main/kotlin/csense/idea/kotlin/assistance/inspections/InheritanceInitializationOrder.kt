@@ -49,11 +49,11 @@ class InheritanceInitializationOrder : AbstractKotlinInspection() {
     override fun isEnabledByDefault(): Boolean {
         return true
     }
-
-    override fun getSuppressActions(element: PsiElement?): Array<SuppressIntentionAction>? {
-        return arrayOf(
-                PropertyFunctionSuppressor("Suppress inheritance initialization issue", groupDisplayName, shortName))
-    }
+//
+//    override fun getSuppressActions(element: PsiElement?): Array<SuppressIntentionAction>? {
+//        return arrayOf(
+//                PropertyFunctionSuppressor("Suppress inheritance initialization issue", groupDisplayName, shortName))
+//    }
 
     //we have 2 parts of this inspection
     //part 1 is the base class "issue", where we are accessing / using abstract / open from fields or the init function.
