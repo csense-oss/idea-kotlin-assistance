@@ -202,7 +202,7 @@ class InheritanceInitializationOrder : AbstractKotlinInspection() {
     private val functionsOverridingCache = SimpleLRUCache<KtClass, FunctionsOverridingCacheData>(500)
 
     fun computeBaseClassDangerousStarts(
-            theClass: KtClass,
+            theClass: KtClassOrObject,
             ourFqName: String
     ): Map<KtProperty, List<KtNameReferenceExpression>> {
         val inCache = superClassDangerousStateCache[theClass]
@@ -236,11 +236,11 @@ class InheritanceInitializationOrder : AbstractKotlinInspection() {
 
 
     private val superClassDangerousStateCache:
-            SimpleLRUCache<KtClass, Pair<Map<KtProperty, List<KtNameReferenceExpression>>, Long>> =
+            SimpleLRUCache<KtClassOrObject, Pair<Map<KtProperty, List<KtNameReferenceExpression>>, Long>> =
             SimpleLRUCache(500)
 }
 
-val KtClass.superClass: KtClass?
+val KtClassOrObject.superClass: KtClassOrObject?
     get() {
         val superTypes = superTypeListEntries
         if (superTypes.isEmpty()) {
@@ -248,7 +248,7 @@ val KtClass.superClass: KtClass?
         }
         superTypes.forEach {
             val realClass = it.typeAsUserType?.referenceExpression?.resolveMainReferenceToDescriptors()
-                    ?.firstOrNull()?.containingDeclaration?.findPsi() as? KtClass
+                    ?.firstOrNull()?.containingDeclaration?.findPsi() as? KtClassOrObject
             if (realClass != null) {
                 return realClass
             }
@@ -280,7 +280,7 @@ fun KtProperty.isAbstractOrOpen(): Boolean {
     return isAbstract() || isOverridable()
 }
 
-fun KtClass.getAllFunctions(): List<KtNamedFunction> = collectDescendantsOfType()
+fun KtClassOrObject.getAllFunctions(): List<KtNamedFunction> = collectDescendantsOfType()
 
 inline fun <reified T : Any> PsiElement.findParentOfType(): T? {
     return findParentAndBeforeFromType<T>()?.first
