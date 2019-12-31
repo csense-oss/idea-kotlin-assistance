@@ -3,6 +3,8 @@ package csense.idea.kotlin.assistance.inspections
 import com.intellij.codeHighlighting.*
 import com.intellij.codeInspection.*
 import csense.idea.kotlin.assistance.*
+import csense.idea.kotlin.assistance.quickfixes.LabeledReturnQuickFix
+import csense.idea.kotlin.assistance.quickfixes.RemoveReturnQuickFix
 import org.jetbrains.kotlin.idea.inspections.*
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.psi.psiUtil.collectDescendantsOfType
@@ -45,10 +47,6 @@ class PotentialDangerousReturn : AbstractKotlinInspection() {
     override fun buildVisitor(holder: ProblemsHolder,
                               isOnTheFly: Boolean): KtVisitorVoid {
         return namedFunctionVisitor {
-            val haveDeclaredReturnType = it.hasDeclaredReturnType()
-            if (!haveDeclaredReturnType) {
-                return@namedFunctionVisitor
-            }
             //as a start, we only consider functions that are expression functions or have a return function as the first thing.
             //so skip if not.
             val firstChildAsReturn = it.children.firstOrNull() as? KtReturnExpression
@@ -60,6 +58,7 @@ class PotentialDangerousReturn : AbstractKotlinInspection() {
             } else {
                 firstChildAsReturn
             } ?: return@namedFunctionVisitor
+
             val firstCall = firstExp.findDescendantOfType<KtCallExpression>() ?: return@namedFunctionVisitor
             val innerReturns = firstCall.collectDescendantsOfType<KtReturnExpression>()
             val first = innerReturns.firstOrNull()
@@ -69,13 +68,15 @@ class PotentialDangerousReturn : AbstractKotlinInspection() {
             }
             //if it is not a labeled expression then we have 2 returns nested as the "last" things akk, potentially dangerous.
             if (innerReturns.first().labeledExpression == null) {
-                holder.registerProblem(first, "Dangerous return statement in inline function")
+                val labelName = firstCall.calleeExpression?.text ?: "-"
+                holder.registerProblem(first, "Dangerous return statement in inline function",
+                        RemoveReturnQuickFix(first),
+                        LabeledReturnQuickFix(first, labelName))//the last option is to suppress this inspection.
             }
-            //TODO now know whenever the return contains a "@" or not.
-            //if not => report problem.
         }
     }
 }
+
 
 /*
 a dangerous return can be seen here.
