@@ -3,6 +3,7 @@ package csense.idea.kotlin.assistance.inspections
 import com.intellij.codeHighlighting.*
 import com.intellij.codeInspection.*
 import com.intellij.psi.*
+import csense.idea.base.bll.*
 import csense.idea.kotlin.assistance.*
 import csense.idea.kotlin.assistance.suppression.*
 import csense.kotlin.ds.cache.*
@@ -238,64 +239,4 @@ class InheritanceInitializationOrder : AbstractKotlinInspection() {
     private val superClassDangerousStateCache:
             SimpleLRUCache<KtClassOrObject, Pair<Map<KtProperty, List<KtNameReferenceExpression>>, Long>> =
             SimpleLRUCache(500)
-}
-
-val KtClassOrObject.superClass: KtClassOrObject?
-    get() {
-        val superTypes = superTypeListEntries
-        if (superTypes.isEmpty()) {
-            return null
-        }
-        superTypes.forEach {
-            val realClass = it.typeAsUserType?.referenceExpression?.resolveMainReferenceToDescriptors()
-                    ?.firstOrNull()?.containingDeclaration?.findPsi() as? KtClassOrObject
-            if (realClass != null) {
-                return realClass
-            }
-        }
-        return null
-    }
-
-fun KtProperty.isOverriding(): Boolean {
-    return modifierList?.isOverriding() ?: false
-}
-
-fun KtNamedFunction.isOverriding(): Boolean {
-    return modifierList?.isOverriding() ?: false
-}
-
-fun KtModifierList.isOverriding(): Boolean {
-    return hasModifier(KtTokens.OVERRIDE_KEYWORD)
-}
-
-fun KtClass.isAbstractOrOpen(): Boolean {
-    return isAbstract() || isOverridable()
-}
-
-fun KtNamedFunction.isAbstractOrOpen(): Boolean {
-    return isAbstract() || isOverridable()
-}
-
-fun KtProperty.isAbstractOrOpen(): Boolean {
-    return isAbstract() || isOverridable()
-}
-
-fun KtClassOrObject.getAllFunctions(): List<KtNamedFunction> = collectDescendantsOfType()
-
-inline fun <reified T : Any> PsiElement.findParentOfType(): T? {
-    return findParentAndBeforeFromType<T>()?.first
-}
-
-
-inline fun <reified T : Any> PsiElement.findParentAndBeforeFromType(): Pair<T, PsiElement>? {
-    var currentElement: PsiElement? = this
-    var previousType = this
-    while (currentElement != null) {
-        if (currentElement is T) {
-            return Pair(currentElement, previousType)
-        }
-        previousType = currentElement
-        currentElement = currentElement.parent
-    }
-    return null
 }

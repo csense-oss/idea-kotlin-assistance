@@ -8,6 +8,7 @@ import com.intellij.psi.SmartPsiElementPointer
 import csense.idea.kotlin.assistance.Constants
 import org.jetbrains.kotlin.psi.KtPsiFactory
 import org.jetbrains.kotlin.psi.KtReturnExpression
+import org.jetbrains.kotlin.psi.psiUtil.createSmartPointer
 
 /**
  * Given a return and a label allows you to add the label to the given return statement.
@@ -17,8 +18,7 @@ class LabeledReturnQuickFix(
         val labelName: String
 ) : LocalQuickFix {
 
-    private val returnSt: SmartPsiElementPointer<KtReturnExpression> =
-            SmartPointerManager.getInstance(returnStatement.project).createSmartPsiElementPointer(returnStatement, returnStatement.containingFile)
+    private val returnSt: SmartPsiElementPointer<KtReturnExpression> = returnStatement.createSmartPointer()
 
     override fun getFamilyName(): String = Constants.InspectionGroupName
 

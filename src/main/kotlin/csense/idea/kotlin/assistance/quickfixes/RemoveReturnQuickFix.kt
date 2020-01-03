@@ -8,12 +8,12 @@ import com.intellij.psi.SmartPsiElementPointer
 import csense.idea.kotlin.assistance.Constants
 import org.jetbrains.kotlin.psi.KtPsiFactory
 import org.jetbrains.kotlin.psi.KtReturnExpression
+import org.jetbrains.kotlin.psi.psiUtil.createSmartPointer
 
 class RemoveReturnQuickFix(
         returnStatement: KtReturnExpression
 ) : LocalQuickFix {
-    private val returnSt: SmartPsiElementPointer<KtReturnExpression> =
-            SmartPointerManager.getInstance(returnStatement.project).createSmartPsiElementPointer(returnStatement, returnStatement.containingFile)
+    private val returnSt: SmartPsiElementPointer<KtReturnExpression> = returnStatement.createSmartPointer()
 
     override fun getFamilyName(): String = Constants.InspectionGroupName
 

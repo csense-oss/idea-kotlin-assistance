@@ -3,6 +3,8 @@ package csense.idea.kotlin.assistance.inspections
 import com.intellij.codeHighlighting.*
 import com.intellij.codeInspection.*
 import com.intellij.psi.*
+import csense.idea.base.bll.findNonDelegatingProperties
+import csense.idea.base.bll.isFunction
 import csense.idea.kotlin.assistance.*
 import csense.idea.kotlin.assistance.quickfixes.*
 import csense.idea.kotlin.assistance.suppression.*
@@ -132,12 +134,6 @@ class InitializationOrder : AbstractKotlinInspection() {
     }
 
 
-}
-
-fun KtClassOrObject.getProperties() = getBody()?.properties.orEmpty()
-
-fun KtClassOrObject.findNonDelegatingProperties(): List<KtProperty> {
-    return getProperties().filterNot { prop -> prop.hasDelegate() }
 }
 
 fun List<KtProperty>.computeQuickIndexedNameLookup(): Map<String, Int> {
@@ -273,19 +269,6 @@ private fun KtNameReferenceExpression.isBeforeOrFunction(
     val itName = getReferencedName()
     val itOrder = (order[itName] ?: Int.MAX_VALUE)
     return itOrder < ourIndex || this.isFunction()
-}
-
-fun KtNameReferenceExpression.isFunction(): Boolean {
-    return this.resolveMainReferenceToDescriptors().firstOrNull()?.findPsi() as? KtFunction != null
-}
-
-fun KtNameReferenceExpression.isProperty(): Boolean {
-    return findPsi() as? KtProperty != null
-}
-
-fun KtNameReferenceExpression.findPsi(): PsiElement? {
-    val referre = this.resolveMainReferenceToDescriptors().firstOrNull() ?: return null
-    return referre.findPsi()
 }
 
 
