@@ -4,8 +4,7 @@ import com.intellij.codeInspection.*
 import com.intellij.openapi.editor.*
 import com.intellij.openapi.project.*
 import com.intellij.psi.*
-import csense.idea.base.bll.findParentOfType
-import csense.idea.kotlin.assistance.inspections.*
+import csense.idea.base.bll.psi.findParentOfType
 import org.jetbrains.kotlin.psi.*
 
 
