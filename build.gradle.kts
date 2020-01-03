@@ -13,7 +13,7 @@ version = "0.9.4"
 
 intellij {
     updateSinceUntilBuild = false //Disables updating since-build attribute in plugin.xml
-    setPlugins("Kotlin","java")
+    setPlugins("Kotlin", "java")
     version = "2019.2"
 }
 
@@ -27,7 +27,7 @@ repositories {
 dependencies {
     implementation("csense.kotlin:csense-kotlin-jvm:0.0.29")
     implementation("csense.kotlin:csense-kotlin-ds-jvm:0.0.24")
-    implementation("csense.idea.base:csense-idea-base:0.0.3")
+    implementation("csense.idea.base:csense-idea-base:0.0.4")
 
 }
 

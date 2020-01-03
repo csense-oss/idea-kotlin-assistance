@@ -3,6 +3,8 @@ package csense.idea.kotlin.assistance.inspections
 import com.intellij.codeHighlighting.*
 import com.intellij.codeInspection.*
 import com.intellij.psi.*
+import csense.idea.base.bll.findOriginalMethodArgumentNames
+import csense.idea.base.bll.kotlin.findInvocationArgumentNames
 import csense.idea.kotlin.assistance.*
 import csense.idea.kotlin.assistance.suppression.*
 import org.jetbrains.kotlin.descriptors.*
@@ -128,25 +130,6 @@ class NamedArgsPositionMismatch : AbstractKotlinInspection() {
 }
 
 data class MismatchedName(val name: String, val parameterIndex: Int, val shouldBeAtIndex: Int)
-
-
-fun KtCallExpression.findInvocationArgumentNames(): List<String?> {
-    return valueArguments.map {
-        val isNamed = it.getArgumentExpression() as? KtNameReferenceExpression
-        isNamed?.getReferencedName()
-    }
-}
-
-/**
- *
- * @return List<String> the order of the arguments as well as the name
- */
-fun CallableDescriptor.findOriginalMethodArgumentNames(): List<String> {
-    return valueParameters.map { param ->
-        param.name.asString()
-    }
-}
-
 
 fun KotlinType.findLambdaParameterName(): String? {
     return annotations.findAnnotation(

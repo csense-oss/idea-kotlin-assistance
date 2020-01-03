@@ -7,7 +7,7 @@ import com.intellij.openapi.ui.*
 import com.intellij.openapi.ui.popup.*
 import com.intellij.psi.*
 import com.intellij.ui.awt.*
-import csense.idea.base.bll.findNonDelegatingProperties
+import csense.idea.base.bll.kotlin.findNonDelegatingProperties
 import csense.idea.kotlin.assistance.inspections.*
 import org.jetbrains.kotlin.idea.core.*
 import org.jetbrains.kotlin.idea.inspections.*
@@ -52,7 +52,6 @@ class MoveDeclarationsQuickFix(element: KtClassOrObject) : LocalQuickFixOnPsiEle
                 item.replace(newSorted[index])
             }
         }
-
 
     }
 

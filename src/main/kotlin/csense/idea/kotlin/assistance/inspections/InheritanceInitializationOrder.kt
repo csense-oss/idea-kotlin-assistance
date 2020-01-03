@@ -4,6 +4,7 @@ import com.intellij.codeHighlighting.*
 import com.intellij.codeInspection.*
 import com.intellij.psi.*
 import csense.idea.base.bll.*
+import csense.idea.base.bll.kotlin.*
 import csense.idea.kotlin.assistance.*
 import csense.idea.kotlin.assistance.suppression.*
 import csense.kotlin.ds.cache.*

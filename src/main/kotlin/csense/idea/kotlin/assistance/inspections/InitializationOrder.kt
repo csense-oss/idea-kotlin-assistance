@@ -3,8 +3,8 @@ package csense.idea.kotlin.assistance.inspections
 import com.intellij.codeHighlighting.*
 import com.intellij.codeInspection.*
 import com.intellij.psi.*
-import csense.idea.base.bll.findNonDelegatingProperties
-import csense.idea.base.bll.isFunction
+import csense.idea.base.bll.kotlin.findNonDelegatingProperties
+import csense.idea.base.bll.kotlin.isFunction
 import csense.idea.kotlin.assistance.*
 import csense.idea.kotlin.assistance.quickfixes.*
 import csense.idea.kotlin.assistance.suppression.*
