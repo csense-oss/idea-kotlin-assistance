@@ -34,6 +34,8 @@ dependencies {
 tasks.getByName<org.jetbrains.intellij.tasks.PatchPluginXmlTask>("patchPluginXml") {
     changeNotes("""
         <ul>
+            <li>bug fixes</li>
+            <li>should work in MPP</li>
             <li>potential dangerous return inspection</li>
          </ul>
       """)
