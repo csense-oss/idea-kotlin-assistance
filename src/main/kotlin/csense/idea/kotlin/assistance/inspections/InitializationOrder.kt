@@ -5,10 +5,13 @@ import com.intellij.codeInspection.*
 import com.intellij.psi.*
 import csense.idea.base.bll.kotlin.findNonDelegatingProperties
 import csense.idea.base.bll.kotlin.isFunction
+import csense.idea.base.bll.psi.findParentOfType
 import csense.idea.kotlin.assistance.*
 import csense.idea.kotlin.assistance.quickfixes.*
 import csense.idea.kotlin.assistance.suppression.*
 import csense.kotlin.ds.cache.*
+import csense.kotlin.extensions.isNotNull
+import csense.kotlin.extensions.isNull
 import org.jetbrains.kotlin.idea.inspections.*
 import org.jetbrains.kotlin.idea.references.*
 import org.jetbrains.kotlin.js.resolve.diagnostics.*
@@ -151,15 +154,27 @@ fun PsiElement.findLocalReferences(
         ourFqNameStart: String,
         nonDelegatesQuickLookup: Set<String>
 ): List<KtNameReferenceExpression> {
+    val areWeStatic = (this as? KtElement)?.isInObject() ?: false
     return collectDescendantsOfType { nameRef: KtNameReferenceExpression ->
         val refFqName = nameRef.resolveMainReferenceToDescriptors().firstOrNull()?.fqNameSafe
                 ?: return@collectDescendantsOfType false
+        if (nameRef.isInObject() != areWeStatic) {
+            //static to non static cannot "fail" as that would imply some weird stuff.
+            return@collectDescendantsOfType false
+        }
+        if (nameRef.isMethodReference() || nameRef.isTypeReference()) {
+            return@collectDescendantsOfType false
+        }
         return@collectDescendantsOfType refFqName.asString().startsWith(ourFqNameStart) &&
                 nonDelegatesQuickLookup.contains(nameRef.getReferencedName())
     }
 }
 
-class DangerousReference(
+fun KtExpression.isTypeReference(): Boolean {
+    return parent is KtUserType
+}
+
+data class DangerousReference(
         val mainReference: KtNameReferenceExpression,
         val innerReferences: List<KtNameReferenceExpression>)
 
@@ -182,11 +197,18 @@ fun KtProperty.findLocalReferencesForInitializer(
     } ?: return listOf()
 }
 
+private fun KtNameReferenceExpression.isMethodReference(): Boolean {
+    return this.parent is KtDoubleColonExpression
+}
+
 private fun KtNameReferenceExpression.isPotentialDangerousReference(
         ourFqNameStart: String,
         nonDelegatesQuickLookup: Set<String>,
         fromName: String?
 ): Boolean {
+    if (isMethodReference()) {
+        return false
+    }
     val referre = this.resolveMainReferenceToDescriptors().firstOrNull() ?: return false
 
     val refFqName = referre.fqNameSafe
@@ -199,25 +221,37 @@ private fun KtNameReferenceExpression.isPotentialDangerousReference(
     if (!isInOurClass) {
         return false
     }
-    return when (val psi = referre.findPsi()) {
+    val psi = referre.findPsi()
+
+    if (psi != null && psi is KtElement) {
+        val isThisStatic = this.isInObject()
+        if (isThisStatic != psi.isInObject()) {
+            return false
+        }
+    }
+    return when (psi) {
         is KtProperty -> {
             //no getter / setter => real "property"
             // (if no getter is specified, it will be synthesized if a setter is there).
-            return if (psi.getter != null) {
-                //synthetic property, just like a function.
-                resolveInnerDangerousReferences(
-                        ourFqNameStart,
-                        nonDelegatesQuickLookup,
-                        psi.getter).isNotEmpty()
-            } else if (psi.setter != null) {
-                //setter but no getter ? then only look at the initializer.
-                resolveInnerDangerousReferences(
-                        ourFqNameStart,
-                        nonDelegatesQuickLookup,
-                        psi.initializer).isNotEmpty()
-            } else {
-                //there are no getter /setter so its a raw property
-                true
+            return when {
+                psi.getter != null -> {
+                    //synthetic property, just like a function.
+                    resolveInnerDangerousReferences(
+                            ourFqNameStart,
+                            nonDelegatesQuickLookup,
+                            psi.getter).isNotEmpty()
+                }
+                psi.setter != null -> {
+                    //setter but no getter ? then only look at the initializer.
+                    resolveInnerDangerousReferences(
+                            ourFqNameStart,
+                            nonDelegatesQuickLookup,
+                            psi.initializer).isNotEmpty()
+                }
+                else -> {
+                    //there are no getter /setter so its a raw property
+                    true
+                }
             }
         }
         is KtFunction -> {
@@ -239,6 +273,9 @@ private fun resolveInnerDangerousReferences(
         mainPsi: PsiElement?
 ): List<KtNameReferenceExpression> {
     return when (mainPsi) {
+        is KtPropertyAccessor -> {
+            mainPsi.findLocalReferences(ourFqNameStart, nonDelegatesQuickLookup)
+        }
         is KtProperty, is KtFunction -> {
             mainPsi.findLocalReferences(ourFqNameStart, nonDelegatesQuickLookup)
         }
@@ -253,10 +290,19 @@ fun List<DangerousReference>.resolveInvalidOrders(
     val ourIndex = order[name] ?: return listOf() //should not return.... :/ ???
     return filter { ref ->
         val isMainRefOk = ref.mainReference.isBeforeOrFunction(ourIndex, order)
-        //if we reference something that is declared after us, its an "issue". only if it is not a function
+        //if we reference something that is declared after us, its an "issue". only if it is not a function; if its static and we are not its also not an issue.
         !isMainRefOk || ref.innerReferences.isAllNotBeforeOrFunction(ourIndex, order)
     }
 }
+
+fun List<KtElement>.isAllStatic(): Boolean = all {
+    it.isInObject()
+}
+
+fun KtElement.isNotStatic(): Boolean = !isInObject()
+
+fun KtElement.isInObject(): Boolean =
+        this.findParentOfType<KtClassOrObject>() is KtObjectDeclaration
 
 private fun List<KtNameReferenceExpression>.isAllNotBeforeOrFunction(
         ourIndex: Int,

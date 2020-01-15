@@ -8,7 +8,7 @@ plugins {
 }
 
 group = "csense-idea"
-version = "0.9.5"
+version = "0.9.6"
 // See https://github.com/JetBrains/gradle-intellij-plugin/
 
 intellij {
@@ -27,16 +27,15 @@ repositories {
 dependencies {
     implementation("csense.kotlin:csense-kotlin-jvm:0.0.29")
     implementation("csense.kotlin:csense-kotlin-ds-jvm:0.0.24")
-    implementation("csense.idea.base:csense-idea-base:0.0.7")
+    implementation("csense.idea.base:csense-idea-base:0.1.2")
 
 }
 
 tasks.getByName<org.jetbrains.intellij.tasks.PatchPluginXmlTask>("patchPluginXml") {
     changeNotes("""
         <ul>
-            <li>bug fixes</li>
-            <li>should work in MPP</li>
-            <li>potential dangerous return inspection</li>
+            <li>invalid initialization had some funny places it would report that would not be a problem (non static to static , or method references)</li>
+            <li>More fixes for newer IDEA and property accessors (caused initialization order to stop working for some types of properties)</li>
          </ul>
       """)
 }
