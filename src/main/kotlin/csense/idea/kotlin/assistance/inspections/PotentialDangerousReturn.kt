@@ -2,13 +2,24 @@ package csense.idea.kotlin.assistance.inspections
 
 import com.intellij.codeHighlighting.*
 import com.intellij.codeInspection.*
+import csense.idea.base.UastKtPsi.resolvePsi
+import csense.idea.base.bll.kotlin.*
 import csense.idea.kotlin.assistance.*
 import csense.idea.kotlin.assistance.quickfixes.LabeledReturnQuickFix
 import csense.idea.kotlin.assistance.quickfixes.RemoveReturnQuickFix
+import org.jetbrains.kotlin.builtins.isFunctionType
+import org.jetbrains.kotlin.idea.debugger.sequence.psi.resolveType
 import org.jetbrains.kotlin.idea.inspections.*
+import org.jetbrains.kotlin.idea.references.KtReference
+import org.jetbrains.kotlin.idea.references.resolveMainReferenceToDescriptors
+import org.jetbrains.kotlin.lexer.KtTokens
+import org.jetbrains.kotlin.nj2k.postProcessing.resolve
 import org.jetbrains.kotlin.psi.*
+import org.jetbrains.kotlin.psi.psiUtil.anyDescendantOfType
 import org.jetbrains.kotlin.psi.psiUtil.collectDescendantsOfType
 import org.jetbrains.kotlin.psi.psiUtil.findDescendantOfType
+import org.jetbrains.kotlin.psi.psiUtil.isFunctionalExpression
+import org.jetbrains.kotlin.psi.stubs.elements.KtTypeAliasElementType
 
 class PotentialDangerousReturn : AbstractKotlinInspection() {
 
@@ -46,32 +57,34 @@ class PotentialDangerousReturn : AbstractKotlinInspection() {
 
     override fun buildVisitor(holder: ProblemsHolder,
                               isOnTheFly: Boolean): KtVisitorVoid {
-        return namedFunctionVisitor {
+        return namedFunctionVisitor { ourFnc ->
             //as a start, we only consider functions that are expression functions or have a return function as the first thing.
             //so skip if not.
-            val firstChildAsReturn = it.children.firstOrNull() as? KtReturnExpression
-            if (it.bodyExpression == null && firstChildAsReturn == null) {
+            val firstChildAsReturn = ourFnc.children.firstOrNull() as? KtReturnExpression
+            if (ourFnc.bodyExpression == null && firstChildAsReturn == null) {
                 return@namedFunctionVisitor
             }
-            val firstExp = if (it.bodyExpression != null) {
-                it.bodyExpression
+            val firstExp = if (ourFnc.bodyExpression != null) {
+                ourFnc.bodyExpression
             } else {
                 firstChildAsReturn
             } ?: return@namedFunctionVisitor
 
-            val firstCall = firstExp.findDescendantOfType<KtCallExpression>() ?: return@namedFunctionVisitor
-            val innerReturns = firstCall.collectDescendantsOfType<KtReturnExpression>()
-            val first = innerReturns.firstOrNull()
-            if (innerReturns.count() != 1 || first == null) {
-                //only consider simple cases where there are only 1 return (otherwise it "might" be intended
-                return@namedFunctionVisitor
+            val fncCalls = firstExp.collectDescendantsOfType<KtCallExpression> { exp ->
+                //only look for function calls that involves inline (and not only on parameters that are no inline).
+                exp.resolveMainReferenceAsKtFunction()?.isInlineWithInlineParameters() ?: false
             }
-            //if it is not a labeled expression then we have 2 returns nested as the "last" things akk, potentially dangerous.
-            if (innerReturns.first().labeledExpression == null) {
-                val labelName = firstCall.calleeExpression?.text ?: "-"
-                holder.registerProblem(first, "Dangerous return statement in inline function",
-                        RemoveReturnQuickFix(first),
-                        LabeledReturnQuickFix(first, labelName))//the last option is to suppress this inspection.
+            fncCalls.forEach { firstCall ->
+                val innerReturns = firstCall.collectDescendantsOfType<KtReturnExpression>()
+                //only consider simple cases where there are only 1 return (otherwise ourFnc "might" be intended
+                val first = innerReturns.singleOrNull() ?: return@namedFunctionVisitor
+                //if ourFnc is not a labeled expression then we have 2 returns nested as the "last" things akk, potentially dangerous.
+                if (first.labeledExpression == null) {
+                    val labelName = firstCall.calleeExpression?.text ?: "-"
+                    holder.registerProblem(first, "Dangerous return statement in inline function",
+                            RemoveReturnQuickFix(first),
+                            LabeledReturnQuickFix(first, labelName))//the last option is to suppress this inspection.
+                }
             }
         }
     }

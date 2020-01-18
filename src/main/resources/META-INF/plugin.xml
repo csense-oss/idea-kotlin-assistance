@@ -20,9 +20,9 @@
     <depends>com.intellij.modules.java</depends>
 
     <extensions defaultExtensionNs="com.intellij">
-    <inspectionToolProvider
-            implementation="csense.idea.kotlin.assistance.inspections.InspectionsProvider"/>
-</extensions>
+        <inspectionToolProvider
+                implementation="csense.idea.kotlin.assistance.inspections.InspectionsProvider"/>
+    </extensions>
 
     <project-components>
         <component>
@@ -36,5 +36,5 @@
         <!-- Add your actions here -->
     </actions>
 
-    <idea-version since-build="182"/>
+    <idea-version since-build="192"/>
 </idea-plugin>
