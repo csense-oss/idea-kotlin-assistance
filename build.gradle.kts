@@ -8,7 +8,7 @@ plugins {
 }
 
 group = "csense-idea"
-version = "0.9.7"
+version = "0.9.8"
 // See https://github.com/JetBrains/gradle-intellij-plugin/
 
 intellij {
@@ -25,8 +25,8 @@ repositories {
 }
 
 dependencies {
-    implementation("csense.kotlin:csense-kotlin-jvm:0.0.29")
-    implementation("csense.kotlin:csense-kotlin-annotations-jvm:0.0.15")
+    implementation("csense.kotlin:csense-kotlin-jvm:0.0.31")
+    implementation("csense.kotlin:csense-kotlin-annotations-jvm:0.0.17")
     implementation("csense.kotlin:csense-kotlin-ds-jvm:0.0.24")
     implementation("csense.idea.base:csense-idea-base:0.1.6")
 }
@@ -34,7 +34,8 @@ dependencies {
 tasks.getByName<org.jetbrains.intellij.tasks.PatchPluginXmlTask>("patchPluginXml") {
     changeNotes("""
         <ul>
-            <li>More fixes for dangerous return, now only considers inline functions</li>
+            <li>Usage after overwriting inspection added.</li>
+            <li>function and variable name collision inspection added</li>
          </ul>
       """)
 }
