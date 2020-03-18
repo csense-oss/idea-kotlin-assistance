@@ -10,6 +10,9 @@
      Examples include:
      <ul>
         <li> initialization order bugs </li>
+        <li> Usage after overwriting a value (and then using the overwritten in conjunction)</li>
+        <li> Potentially bad returns (returning from say "any" might be missing a label)</li>
+        <li> Naming issues for variables / function names </li>
         <li> mismatched lambda parameter names (for example forEachIndex, where the first should be index, but easily can be mistaken) </li>
         <li> mismatched parameter names (you use the wrong place for the given argument) </li>
      </ul>
@@ -23,14 +26,6 @@
         <inspectionToolProvider
                 implementation="csense.idea.kotlin.assistance.inspections.InspectionsProvider"/>
     </extensions>
-
-    <project-components>
-        <component>
-            <implementation-class>
-                csense.idea.kotlin.assistance.notification.MainNotificationComponent
-            </implementation-class>
-        </component>
-    </project-components>
 
     <actions>
         <!-- Add your actions here -->

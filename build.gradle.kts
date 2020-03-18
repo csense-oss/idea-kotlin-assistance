@@ -2,13 +2,13 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     id("org.jetbrains.intellij") version "0.4.15"
-    kotlin("jvm") version "1.3.61"
+    kotlin("jvm") version "1.3.70"
     java
     id("org.owasp.dependencycheck") version "5.2.4"
 }
 
 group = "csense-idea"
-version = "0.9.8"
+version = "0.9.10"
 // See https://github.com/JetBrains/gradle-intellij-plugin/
 
 intellij {
@@ -34,8 +34,8 @@ dependencies {
 tasks.getByName<org.jetbrains.intellij.tasks.PatchPluginXmlTask>("patchPluginXml") {
     changeNotes("""
         <ul>
-            <li>Usage after overwriting inspection added.</li>
-            <li>function and variable name collision inspection added</li>
+            <li>removed dead code, as it caused compatibility issues.</li>
+            <li>Updated usage after overwrite to handle multiple vars.</li>
          </ul>
       """)
 }

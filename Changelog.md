@@ -1,5 +1,9 @@
 # Changelog
 
+### 0.9.9
+- update descriptions
+- removed dead / unused code
+
 
 ### 0.9.8
 - usage after overwriting inspection added.
