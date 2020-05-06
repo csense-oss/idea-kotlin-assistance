@@ -1,14 +1,14 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    id("org.jetbrains.intellij") version "0.4.15"
-    kotlin("jvm") version "1.3.70"
+    id("org.jetbrains.intellij") version "0.4.19"
+    kotlin("jvm") version "1.3.72"
     java
     id("org.owasp.dependencycheck") version "5.2.4"
 }
 
 group = "csense-idea"
-version = "0.9.10"
+version = "0.9.11"
 // See https://github.com/JetBrains/gradle-intellij-plugin/
 
 intellij {
@@ -25,17 +25,16 @@ repositories {
 }
 
 dependencies {
-    implementation("csense.kotlin:csense-kotlin-jvm:0.0.31")
+    implementation("csense.kotlin:csense-kotlin-jvm:0.0.33")
     implementation("csense.kotlin:csense-kotlin-annotations-jvm:0.0.17")
     implementation("csense.kotlin:csense-kotlin-ds-jvm:0.0.24")
-    implementation("csense.idea.base:csense-idea-base:0.1.6")
+    implementation("csense.idea.base:csense-idea-base:0.1.9")
 }
 
 tasks.getByName<org.jetbrains.intellij.tasks.PatchPluginXmlTask>("patchPluginXml") {
     changeNotes("""
         <ul>
-            <li>removed dead code, as it caused compatibility issues.</li>
-            <li>Updated usage after overwrite to handle multiple vars.</li>
+            <li>More improvements to mismatched named args</li>
          </ul>
       """)
 }
