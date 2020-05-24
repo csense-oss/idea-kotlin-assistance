@@ -1,9 +1,15 @@
 # Changelog
 
+### 0.9.11
+- improvements to mismatched arg names.
+
+### 0.9.10
+- removed dead code, as it caused compatibility issues
+- Updated usage after overwrite to handle multiple vars
+
 ### 0.9.9
 - update descriptions
 - removed dead / unused code
-
 
 ### 0.9.8
 - usage after overwriting inspection added.
