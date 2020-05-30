@@ -8,7 +8,7 @@ plugins {
 }
 
 group = "csense-idea"
-version = "0.9.11"
+version = "0.9.12"
 // See https://github.com/JetBrains/gradle-intellij-plugin/
 
 intellij {
@@ -28,15 +28,13 @@ dependencies {
     implementation("csense.kotlin:csense-kotlin-jvm:0.0.34")
     implementation("csense.kotlin:csense-kotlin-annotations-jvm:0.0.17")
     implementation("csense.kotlin:csense-kotlin-ds-jvm:0.0.24")
-    implementation("csense.idea.base:csense-idea-base:0.1.9")
+    implementation("csense.idea.base:csense-idea-base:0.1.10")
 }
 
 tasks.getByName<org.jetbrains.intellij.tasks.PatchPluginXmlTask>("patchPluginXml") {
     changeNotes("""
         <ul>
-            <li>More improvements to mismatched named args</li>
-            <li>removed dead code, as it caused compatibility issues.</li>
-            <li>Updated usage after overwrite to handle multiple vars.</li>
+            <li>"Function have same name" inspection not triggering on local variables nor on non functional types</li>
          </ul>
       """)
 }

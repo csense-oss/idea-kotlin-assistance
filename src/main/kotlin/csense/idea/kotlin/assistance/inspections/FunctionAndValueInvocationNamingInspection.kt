@@ -6,6 +6,7 @@ import com.intellij.psi.*
 import csense.idea.base.bll.kotlin.*
 import csense.idea.kotlin.assistance.*
 import csense.idea.kotlin.assistance.suppression.*
+import org.jetbrains.kotlin.builtins.*
 import org.jetbrains.kotlin.idea.inspections.*
 import org.jetbrains.kotlin.name.*
 import org.jetbrains.kotlin.psi.*
@@ -80,7 +81,7 @@ class FunctionAndValueInvocationNamingInspection : AbstractKotlinInspection() {
                               isOnTheFly: Boolean): KtVisitorVoid {
         return classOrObjectVisitor {
             val functions = it.getAllFunctions()
-            val properties = it.getAllProperties()
+            val properties = it.getAllClassProperties()
             val mappedProperties = mutableMapOf<Name, KtNamedDeclaration>()
             properties.forEach { declaration ->
                 mappedProperties[declaration.nameAsSafeName] = declaration
@@ -97,10 +98,14 @@ class FunctionAndValueInvocationNamingInspection : AbstractKotlinInspection() {
     }
 }
 
-fun KtClassOrObject.getAllProperties(): List<KtNamedDeclaration> {
-    val localFields = collectDescendantsOfType<KtProperty>()
+fun KtClassOrObject.getAllClassProperties(): List<KtNamedDeclaration> {
+    val localFields = collectDescendantsOfType<KtProperty> {
+        !it.isLocal && (it.resolveType()?.isFunctionType ?: false)
+    }
     val constructorFields: List<KtNamedDeclaration> = primaryConstructor?.let {
-        it.collectDescendantsOfType { param: KtParameter -> param.hasValOrVar() }
+        it.collectDescendantsOfType { param: KtParameter ->
+            param.hasValOrVar() && param.isFunctionalType()
+        }
     } ?: listOf()
     return localFields + constructorFields
 }

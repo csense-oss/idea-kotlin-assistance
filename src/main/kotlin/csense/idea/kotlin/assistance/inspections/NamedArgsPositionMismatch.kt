@@ -4,7 +4,6 @@ import com.intellij.codeHighlighting.*
 import com.intellij.codeInspection.*
 import com.intellij.psi.*
 import csense.idea.base.bll.findOriginalMethodArgumentNames
-import csense.idea.base.bll.kotlin.findInvocationArgumentNames
 import csense.idea.kotlin.assistance.*
 import csense.idea.kotlin.assistance.suppression.*
 import org.jetbrains.kotlin.descriptors.*
