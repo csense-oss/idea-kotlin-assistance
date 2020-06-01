@@ -1,5 +1,9 @@
 # Changelog
-
+###  0.9.12
+ - "Function have same name" inspection not triggering on local variables nor on non-functional types
+ - quick fixes updated for labeled returned
+ - text updates 
+ 
 ### 0.9.11
 - improvements to mismatched arg names.
 
@@ -18,7 +22,7 @@
 ### TODO in between
 
 ### 0.5
-- Fixed bugs with order (functions locations does not matter, as its the variables only) & indirect references duplicated names
+- Fixed bugs with order (functions locations does not matter, as it is the variables only) & indirect references duplicated names
 
 ### 0.4
 - handle extensions better for initialization order.

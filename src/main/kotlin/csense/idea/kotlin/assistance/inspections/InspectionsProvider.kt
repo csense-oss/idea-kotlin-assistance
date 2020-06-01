@@ -9,7 +9,7 @@ class InspectionsProvider : InspectionToolProvider {
                 NamedArgsPositionMismatch::class.java,
                 InheritanceInitializationOrder::class.java,
                 PotentialDangerousReturn::class.java,
-                SimpleInfiniteRecursionInspection::class.java,
+//                SimpleInfiniteRecursionInspection::class.java,
                 FunctionAndValueInvocationNamingInspection::class.java,
                 UsageAfterOverwriting::class.java)
     }

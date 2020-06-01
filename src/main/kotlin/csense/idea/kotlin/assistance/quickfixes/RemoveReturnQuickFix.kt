@@ -1,14 +1,11 @@
 package csense.idea.kotlin.assistance.quickfixes
 
-import com.intellij.codeInspection.LocalQuickFix
-import com.intellij.codeInspection.ProblemDescriptor
-import com.intellij.openapi.project.Project
-import com.intellij.psi.SmartPointerManager
-import com.intellij.psi.SmartPsiElementPointer
-import csense.idea.kotlin.assistance.Constants
-import org.jetbrains.kotlin.psi.KtPsiFactory
-import org.jetbrains.kotlin.psi.KtReturnExpression
-import org.jetbrains.kotlin.psi.psiUtil.createSmartPointer
+import com.intellij.codeInspection.*
+import com.intellij.openapi.project.*
+import com.intellij.psi.*
+import csense.idea.kotlin.assistance.*
+import org.jetbrains.kotlin.psi.*
+import org.jetbrains.kotlin.psi.psiUtil.*
 
 class RemoveReturnQuickFix(
         returnStatement: KtReturnExpression

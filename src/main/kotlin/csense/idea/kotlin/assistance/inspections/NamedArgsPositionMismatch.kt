@@ -3,10 +3,9 @@ package csense.idea.kotlin.assistance.inspections
 import com.intellij.codeHighlighting.*
 import com.intellij.codeInspection.*
 import com.intellij.psi.*
-import csense.idea.base.bll.findOriginalMethodArgumentNames
+import csense.idea.base.bll.*
 import csense.idea.kotlin.assistance.*
 import csense.idea.kotlin.assistance.suppression.*
-import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.idea.caches.resolve.*
 import org.jetbrains.kotlin.idea.inspections.*
 import org.jetbrains.kotlin.psi.*
@@ -53,8 +52,10 @@ class NamedArgsPositionMismatch : AbstractKotlinInspection() {
         return HighlightDisplayLevel.ERROR
     }
     
-    override fun buildVisitor(holder: ProblemsHolder,
-                              isOnTheFly: Boolean): KtVisitorVoid {
+    override fun buildVisitor(
+            holder: ProblemsHolder,
+            isOnTheFly: Boolean
+    ): KtVisitorVoid {
         return callExpressionVisitor {
             val call: KtCallExpression = it
             if (call.valueArguments.isEmpty()) {
@@ -78,7 +79,7 @@ class NamedArgsPositionMismatch : AbstractKotlinInspection() {
             call.lambdaArguments.forEach { lambdaArg ->
                 
                 val argName = lambdaArg.getLambdaExpression() ?: return@forEach
-                val usedLambdaArgumentNames = argName.valueParameters.map { parms -> parms.name }
+                val usedLambdaArgumentNames = argName.valueParameters.map { parameters -> parameters.name }
                 
                 val namedArgs = callingFunction.valueParameters[0].type.arguments.map { typeArgs ->
                     typeArgs.type.findLambdaParameterName()
@@ -165,7 +166,7 @@ fun KotlinType.findLambdaParameterName(): String? {
  * @return List<String?>
  */
 fun KtCallExpression.findInvocationArgumentNamesNew(): List<String?> {
-    return valueArguments.map { it: KtValueArgument? ->
+    return valueArguments.map {
         it?.getArgumentExpression()?.resolvePotentialArgumentName()
     }
 }
@@ -176,7 +177,7 @@ fun KtExpression.resolvePotentialArgumentName(): String? = when (this) {
         val lhs = receiverExpression as? KtNameReferenceExpression
         val rhs = selectorExpression as? KtNameReferenceExpression
         rhs?.resolvePotentialArgumentName() ?: lhs?.resolvePotentialArgumentName()
-    }//todo callexpression,akk class with a name then something in that.
+    }//todo callExpression,akk class with a name then something in that.
     //akk
     /*
     data class Bottom(val top: Double)
@@ -190,7 +191,7 @@ fun KtExpression.resolvePotentialArgumentName(): String? = when (this) {
 }
 
 fun KtCallExpression.findArgumentNames(): List<String?> {
-    return valueArguments.map { it: KtValueArgument? ->
+    return valueArguments.map {
         it?.getArgumentName()?.text
     }
 }

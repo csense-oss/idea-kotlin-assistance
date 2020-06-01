@@ -35,9 +35,9 @@ class MoveDeclarationsQuickFix(element: KtClassOrObject) : LocalQuickFixOnPsiEle
         //step 1 , find all non-delegating references,
         val nonDelegates = asClass.findNonDelegatingProperties()
         //step 2 compute a DAG
-        val deps = nonDelegates.computeDependencyDAG(ourFqName) ?: return //broken code.
+        val dependencies = nonDelegates.computeDependencyDAG(ourFqName) ?: return //broken code.
         //step 3 do a topological sorting
-        val sorted = deps.sortTopologically()
+        val sorted = dependencies.sortTopologically()
         if (sorted == null) {
             //step 3.1 if NO Cycles are there go on else report error.
             reportCyclicProblem(editor)

@@ -1,20 +1,18 @@
 package csense.idea.kotlin.assistance.quickfixes
 
-import com.intellij.codeInspection.LocalQuickFix
-import com.intellij.codeInspection.ProblemDescriptor
-import com.intellij.openapi.project.Project
-import com.intellij.psi.SmartPointerManager
-import com.intellij.psi.SmartPsiElementPointer
-import csense.idea.kotlin.assistance.Constants
-import org.jetbrains.kotlin.psi.KtPsiFactory
-import org.jetbrains.kotlin.psi.KtReturnExpression
-import org.jetbrains.kotlin.psi.psiUtil.createSmartPointer
+import com.intellij.codeInspection.*
+import com.intellij.openapi.project.*
+import com.intellij.psi.*
+import csense.idea.kotlin.assistance.*
+import org.jetbrains.kotlin.psi.*
+import org.jetbrains.kotlin.psi.psiUtil.*
 
 /**
  * Given a return and a label allows you to add the label to the given return statement.
  */
 class LabeledReturnQuickFix(
         returnStatement: KtReturnExpression,
+        val order: Int,
         val labelName: String
 ) : LocalQuickFix {
 
@@ -30,7 +28,7 @@ class LabeledReturnQuickFix(
     }
 
     override fun getName(): String {
-        return "labeled return to '$labelName'"
+        return "($order) labeled return to '$labelName'"
     }
 
     override fun startInWriteAction(): Boolean {

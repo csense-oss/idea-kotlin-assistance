@@ -25,16 +25,18 @@ repositories {
 }
 
 dependencies {
-    implementation("csense.kotlin:csense-kotlin-jvm:0.0.34")
+    implementation("csense.kotlin:csense-kotlin-jvm:0.0.35")
     implementation("csense.kotlin:csense-kotlin-annotations-jvm:0.0.17")
     implementation("csense.kotlin:csense-kotlin-ds-jvm:0.0.24")
-    implementation("csense.idea.base:csense-idea-base:0.1.10")
+    implementation("csense.idea.base:csense-idea-base:0.1.13")
 }
 
 tasks.getByName<org.jetbrains.intellij.tasks.PatchPluginXmlTask>("patchPluginXml") {
     changeNotes("""
         <ul>
-            <li>"Function have same name" inspection not triggering on local variables nor on non functional types</li>
+            <li>"Function have same name" inspection not triggering on local variables nor on non-functional types</li>
+            <li> quick fixes updated for labeled returned</li>
+            <li> text updates </li>
          </ul>
       """)
 }

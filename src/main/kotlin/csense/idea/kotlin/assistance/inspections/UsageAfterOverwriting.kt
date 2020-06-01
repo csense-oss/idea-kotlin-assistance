@@ -54,8 +54,10 @@ class UsageAfterOverwriting : AbstractKotlinInspection() {
         return HighlightDisplayLevel.WARNING
     }
     
-    override fun buildVisitor(holder: ProblemsHolder,
-                              isOnTheFly: Boolean): KtVisitorVoid {
+    override fun buildVisitor(
+            holder: ProblemsHolder,
+            isOnTheFly: Boolean
+    ): KtVisitorVoid {
         return binaryExpressionVisitor { assignExpression: KtBinaryExpression ->
             //is this an assignment ? if not skip
             val left = assignExpression.left ?: return@binaryExpressionVisitor

@@ -2,31 +2,19 @@ package csense.idea.kotlin.assistance.inspections
 
 import com.intellij.codeHighlighting.*
 import com.intellij.codeInspection.*
-import csense.idea.base.UastKtPsi.resolvePsi
 import csense.idea.base.bll.kotlin.*
 import csense.idea.kotlin.assistance.*
-import csense.idea.kotlin.assistance.quickfixes.LabeledReturnQuickFix
-import csense.idea.kotlin.assistance.quickfixes.RemoveReturnQuickFix
-import org.jetbrains.kotlin.builtins.isFunctionType
-import org.jetbrains.kotlin.idea.debugger.sequence.psi.resolveType
+import csense.idea.kotlin.assistance.quickfixes.*
 import org.jetbrains.kotlin.idea.inspections.*
-import org.jetbrains.kotlin.idea.references.KtReference
-import org.jetbrains.kotlin.idea.references.resolveMainReferenceToDescriptors
-import org.jetbrains.kotlin.lexer.KtTokens
-import org.jetbrains.kotlin.nj2k.postProcessing.resolve
 import org.jetbrains.kotlin.psi.*
-import org.jetbrains.kotlin.psi.psiUtil.anyDescendantOfType
-import org.jetbrains.kotlin.psi.psiUtil.collectDescendantsOfType
-import org.jetbrains.kotlin.psi.psiUtil.findDescendantOfType
-import org.jetbrains.kotlin.psi.psiUtil.isFunctionalExpression
-import org.jetbrains.kotlin.psi.stubs.elements.KtTypeAliasElementType
+import org.jetbrains.kotlin.psi.psiUtil.*
 
 class PotentialDangerousReturn : AbstractKotlinInspection() {
-
+    
     override fun getDisplayName(): String {
         return "Potentially dangerous return from lambda"
     }
-
+    
     override fun getStaticDescription(): String? {
         return """
             Since it is valid kotlin to return from a inline fun call (with a plain lambda), it can quite easily fall under the radar 
@@ -34,29 +22,31 @@ class PotentialDangerousReturn : AbstractKotlinInspection() {
             break scope rules and to signal the intent, so its not "left there" silent.
         """.trimIndent()
     }
-
+    
     override fun getDescriptionFileName(): String? {
         return ".."
     }
-
+    
     override fun getShortName(): String {
         return "PotentialDangerousReturn"
     }
-
+    
     override fun getGroupDisplayName(): String {
         return Constants.InspectionGroupName
     }
-
+    
     override fun getDefaultLevel(): HighlightDisplayLevel {
         return HighlightDisplayLevel.ERROR
     }
-
+    
     override fun isEnabledByDefault(): Boolean {
         return true
     }
-
-    override fun buildVisitor(holder: ProblemsHolder,
-                              isOnTheFly: Boolean): KtVisitorVoid {
+    
+    override fun buildVisitor(
+            holder: ProblemsHolder,
+            isOnTheFly: Boolean
+    ): KtVisitorVoid {
         return namedFunctionVisitor { ourFnc ->
             //as a start, we only consider functions that are expression functions or have a return function as the first thing.
             //so skip if not.
@@ -69,7 +59,7 @@ class PotentialDangerousReturn : AbstractKotlinInspection() {
             } else {
                 firstChildAsReturn
             } ?: return@namedFunctionVisitor
-
+            
             val fncCalls = firstExp.collectDescendantsOfType<KtCallExpression> { exp ->
                 //only look for function calls that involves inline (and not only on parameters that are no inline).
                 exp.resolveMainReferenceAsKtFunction()?.isInlineWithInlineParameters() ?: false
@@ -81,9 +71,15 @@ class PotentialDangerousReturn : AbstractKotlinInspection() {
                 //if ourFnc is not a labeled expression then we have 2 returns nested as the "last" things akk, potentially dangerous.
                 if (first.labeledExpression == null) {
                     val labelName = firstCall.calleeExpression?.text ?: "-"
-                    holder.registerProblem(first, "Dangerous return statement in inline function",
+                    holder.registerProblem(
+                            first,
+                            "Dangerous return statement in inline function \n" +
+                                    " - is your intent to return from this lambda or (any/ the) outer function(s) ? \n" +
+                                    " annotate the returned scope or choose an action",
                             RemoveReturnQuickFix(first),
-                            LabeledReturnQuickFix(first, labelName))//the last option is to suppress this inspection.
+                            LabeledReturnQuickFix(first, 2, labelName),
+                            LabeledReturnQuickFix(first, 1, ourFnc.name
+                                    ?: ""))//the last option is to suppress this inspection.
                 }
             }
         }

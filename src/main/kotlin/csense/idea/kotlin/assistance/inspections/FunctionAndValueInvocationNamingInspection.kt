@@ -77,8 +77,10 @@ class FunctionAndValueInvocationNamingInspection : AbstractKotlinInspection() {
         return HighlightDisplayLevel.WARNING
     }
     
-    override fun buildVisitor(holder: ProblemsHolder,
-                              isOnTheFly: Boolean): KtVisitorVoid {
+    override fun buildVisitor(
+            holder: ProblemsHolder,
+            isOnTheFly: Boolean
+    ): KtVisitorVoid {
         return classOrObjectVisitor {
             val functions = it.getAllFunctions()
             val properties = it.getAllClassProperties()
@@ -91,7 +93,7 @@ class FunctionAndValueInvocationNamingInspection : AbstractKotlinInspection() {
                 if (propFound != null) {
                     holder.registerProblem(
                             propFound,
-                            "Function have same name as property, please change property name (or function) to avoid confusion and or invocation unclarity")
+                            "Function have same name as property, please change property name (or function) to avoid confusion and or invocation clarity")
                 }
             }
         }

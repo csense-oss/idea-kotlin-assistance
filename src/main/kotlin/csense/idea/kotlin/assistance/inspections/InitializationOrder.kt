@@ -3,15 +3,12 @@ package csense.idea.kotlin.assistance.inspections
 import com.intellij.codeHighlighting.*
 import com.intellij.codeInspection.*
 import com.intellij.psi.*
-import csense.idea.base.bll.kotlin.findNonDelegatingProperties
-import csense.idea.base.bll.kotlin.isFunction
-import csense.idea.base.bll.psi.findParentOfType
+import csense.idea.base.bll.kotlin.*
+import csense.idea.base.bll.psi.*
 import csense.idea.kotlin.assistance.*
 import csense.idea.kotlin.assistance.quickfixes.*
 import csense.idea.kotlin.assistance.suppression.*
 import csense.kotlin.ds.cache.*
-import csense.kotlin.extensions.isNotNull
-import csense.kotlin.extensions.isNull
 import org.jetbrains.kotlin.idea.inspections.*
 import org.jetbrains.kotlin.idea.references.*
 import org.jetbrains.kotlin.js.resolve.diagnostics.*
@@ -21,11 +18,11 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import kotlin.collections.set
 
 class InitializationOrder : AbstractKotlinInspection() {
-
+    
     override fun getDisplayName(): String {
         return "Initialization order"
     }
-
+    
     override fun getStaticDescription(): String? {
         return """
             This inspection tells whenever you have an "invalid" initialization order.
@@ -34,34 +31,36 @@ class InitializationOrder : AbstractKotlinInspection() {
             
         """.trimIndent()
     }
-
+    
     override fun getDescriptionFileName(): String? {
         return "more desc ? "
     }
-
+    
     override fun getShortName(): String {
         return "InitOrder"
     }
-
+    
     override fun getGroupDisplayName(): String {
         return Constants.InspectionGroupName
     }
-
+    
     override fun getDefaultLevel(): HighlightDisplayLevel {
         return HighlightDisplayLevel.ERROR
     }
-
+    
     override fun isEnabledByDefault(): Boolean {
         return true
     }
-
+    
     override fun getSuppressActions(element: PsiElement?): Array<SuppressIntentionAction>? {
         return arrayOf(
                 PropertyFunctionSuppressor("Suppress initialization issue", groupDisplayName, shortName))
     }
-
-    override fun buildVisitor(holder: ProblemsHolder,
-                              isOnTheFly: Boolean): KtVisitorVoid {
+    
+    override fun buildVisitor(
+            holder: ProblemsHolder,
+            isOnTheFly: Boolean
+    ): KtVisitorVoid {
         return classOrObjectVisitor { ourClass: KtClassOrObject ->
             val cached = propertyCache[ourClass]
             val nonDelegates = ourClass.findNonDelegatingProperties()
@@ -97,37 +96,37 @@ class InitializationOrder : AbstractKotlinInspection() {
             }
         }
     }
-
+    
     class PropertyCacheData(
             val properties: MutableMap<KtProperty, Pair<List<DangerousReference>, Long>>,
             val timestampOfClassOrObject: Long
     )
-
+    
     private val propertyCache: SimpleLRUCache<KtClassOrObject, PropertyCacheData> = SimpleLRUCache(1000)
-
+    
     fun createQuickFixes(property: KtProperty, classObj: KtClassOrObject): Array<LocalQuickFix> {
         return arrayOf(
                 MoveDeclarationsQuickFix(classObj),
                 ByLazyDelegateQuickFix(property)
         )
     }
-
+    
     fun createErrorDescription(invalidOrders: List<DangerousReference>): String {
-
+        
         val allInvalid = invalidOrders.map {
             it.innerReferences
         }.flatten().map { it.getReferencedName() }.distinct()
-
-
+        
+        
         val haveInnerInvalid =
                 allInvalid.joinToString(",\"")
-
+        
         val innerMessage = if (haveInnerInvalid.isNotBlank()) {
             "\n(Indirect dangerous references = \"$haveInnerInvalid\")\n"
         } else {
             ""
         }
-
+        
         val invalidOrdersNames = invalidOrders.map {
             it.mainReference.getReferencedName()
         }.distinct().joinToString("\",\"", prefix = "\"", postfix = "\"")
@@ -135,8 +134,8 @@ class InitializationOrder : AbstractKotlinInspection() {
                 innerMessage +
                 "It can / will result in null at runtime(Due to the JVM)"
     }
-
-
+    
+    
 }
 
 fun List<KtProperty>.computeQuickIndexedNameLookup(): Map<String, Int> {
@@ -176,7 +175,8 @@ fun KtExpression.isTypeReference(): Boolean {
 
 data class DangerousReference(
         val mainReference: KtNameReferenceExpression,
-        val innerReferences: List<KtNameReferenceExpression>)
+        val innerReferences: List<KtNameReferenceExpression>
+)
 
 fun KtProperty.findLocalReferencesForInitializer(
         ourFqNameStart: String,
@@ -209,10 +209,10 @@ private fun KtNameReferenceExpression.isPotentialDangerousReference(
     if (isMethodReference()) {
         return false
     }
-    val referre = this.resolveMainReferenceToDescriptors().firstOrNull() ?: return false
-
-    val refFqName = referre.fqNameSafe
-    val refName = referre.name.asString()
+    val referee = this.resolveMainReferenceToDescriptors().firstOrNull() ?: return false
+    
+    val refFqName = referee.fqNameSafe
+    val refName = referee.name.asString()
     if (refName == fromName && refFqName.asString().startsWith(ourFqNameStart)) {
         return false //self reference: either the compiler will fail (field initialized to itself) or its a field with the same name as a parameter..
     }
@@ -221,8 +221,8 @@ private fun KtNameReferenceExpression.isPotentialDangerousReference(
     if (!isInOurClass) {
         return false
     }
-    val psi = referre.findPsi()
-
+    val psi = referee.findPsi()
+    
     if (psi != null && psi is KtElement) {
         val isThisStatic = this.isInObject()
         if (isThisStatic != psi.isInObject()) {
@@ -294,12 +294,12 @@ fun List<DangerousReference>.resolveInvalidOrders(
         !isMainRefOk || ref.innerReferences.isAllNotBeforeOrFunction(ourIndex, order)
     }
 }
+//
+//fun List<KtElement>.isAllStatic(): Boolean = all {
+//    it.isInObject()
+//}
 
-fun List<KtElement>.isAllStatic(): Boolean = all {
-    it.isInObject()
-}
-
-fun KtElement.isNotStatic(): Boolean = !isInObject()
+//fun KtElement.isNotStatic(): Boolean = !isInObject()
 
 fun KtElement.isInObject(): Boolean =
         this.findParentOfType<KtClassOrObject>() is KtObjectDeclaration
@@ -311,7 +311,8 @@ private fun List<KtNameReferenceExpression>.isAllNotBeforeOrFunction(
 
 private fun KtNameReferenceExpression.isBeforeOrFunction(
         ourIndex: Int,
-        order: Map<String, Int>): Boolean {
+        order: Map<String, Int>
+): Boolean {
     val itName = getReferencedName()
     val itOrder = (order[itName] ?: Int.MAX_VALUE)
     return itOrder < ourIndex || this.isFunction()
@@ -320,16 +321,11 @@ private fun KtNameReferenceExpression.isBeforeOrFunction(
 
 fun KtClassOrObject.computeQuickIndexedNameLookup(): Map<String, Int> {
     val resultingMap = mutableMapOf<String, Int>()
-    val allProps = collectDescendantsOfType<KtProperty>()
-
-    allProps.forEach { prop ->
+    collectDescendantsOfType<KtProperty>().forEach { prop ->
         val name = prop.name ?: return@forEach
         resultingMap[name] = prop.startOffsetInParent
     }
-
-
-    val allFuns = collectDescendantsOfType<KtFunction>()
-    allFuns.forEach { function ->
+    collectDescendantsOfType<KtFunction>().forEach { function ->
         val name = function.name ?: return@forEach
         resultingMap[name] = function.startOffsetInParent
     }

@@ -1,6 +1,6 @@
 <idea-plugin>
     <id>csense-idea.kotlin-assistance</id>
-    <name>Csense - kotlin assistance</name>
+    <name>Csense - Kotlin Assistance</name>
     <vendor email="csense@tvedesys.dk" url="https://github.com/csense-oss/idea-kotlin-assistant">
         Csense oss
     </vendor>

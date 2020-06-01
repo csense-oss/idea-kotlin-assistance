@@ -2,20 +2,11 @@ package csense.idea.kotlin.assistance.inspections
 
 import com.intellij.codeHighlighting.*
 import com.intellij.codeInspection.*
-import com.intellij.psi.*
-import csense.idea.base.bll.*
 import csense.idea.base.bll.kotlin.*
 import csense.idea.kotlin.assistance.*
-import csense.idea.kotlin.assistance.suppression.*
 import csense.kotlin.ds.cache.*
-import org.jetbrains.kotlin.idea.core.*
 import org.jetbrains.kotlin.idea.inspections.*
-import org.jetbrains.kotlin.idea.refactoring.*
-import org.jetbrains.kotlin.idea.references.*
-import org.jetbrains.kotlin.js.resolve.diagnostics.*
-import org.jetbrains.kotlin.lexer.*
 import org.jetbrains.kotlin.psi.*
-import org.jetbrains.kotlin.psi.psiUtil.*
 
 class InheritanceInitializationOrder : AbstractKotlinInspection() {
 
@@ -62,8 +53,10 @@ class InheritanceInitializationOrder : AbstractKotlinInspection() {
     //this can / may cause null due to the instantiation order for jvm.
     //which is the second part of this inspection, to see if this is done at the usage site.
 
-    override fun buildVisitor(holder: ProblemsHolder,
-                              isOnTheFly: Boolean): KtVisitorVoid {
+    override fun buildVisitor(
+            holder: ProblemsHolder,
+            isOnTheFly: Boolean
+    ): KtVisitorVoid {
         return classVisitor { ourClass: KtClass ->
             val ourFqName = ourClass.fqName?.asString() ?: return@classVisitor
             val isAbstractOrOpen = ourClass.isAbstractOrOpen()
@@ -194,12 +187,14 @@ class InheritanceInitializationOrder : AbstractKotlinInspection() {
     }
 
     class PropertiesOverridingCacheData(
-            val cached: MutableMap<KtProperty, Pair<List<String>, Long>>)
+            val cached: MutableMap<KtProperty, Pair<List<String>, Long>>
+    )
 
     private val propertiesOverridingCache = SimpleLRUCache<KtClass, PropertiesOverridingCacheData>(500)//todo setting ?
 
     class FunctionsOverridingCacheData(
-            val cached: MutableMap<KtNamedFunction, Pair<List<String>, Long>>)
+            val cached: MutableMap<KtNamedFunction, Pair<List<String>, Long>>
+    )
 
     private val functionsOverridingCache = SimpleLRUCache<KtClass, FunctionsOverridingCacheData>(500)
 
