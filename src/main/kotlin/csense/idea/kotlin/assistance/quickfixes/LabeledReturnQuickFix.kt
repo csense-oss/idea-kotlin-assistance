@@ -15,22 +15,22 @@ class LabeledReturnQuickFix(
         val order: Int,
         val labelName: String
 ) : LocalQuickFix {
-
+    
     private val returnSt: SmartPsiElementPointer<KtReturnExpression> = returnStatement.createSmartPointer()
-
+    
     override fun getFamilyName(): String = Constants.InspectionGroupName
-
+    
     override fun applyFix(project: Project, descriptor: ProblemDescriptor) {
         val element = returnSt.element ?: return
         val code = element.text.replace("return ", "return@$labelName ")
         val fac = KtPsiFactory(project)
         element.replace(fac.createExpression(code))
     }
-
+    
     override fun getName(): String {
         return "($order) labeled return to '$labelName'"
     }
-
+    
     override fun startInWriteAction(): Boolean {
         return true
     }

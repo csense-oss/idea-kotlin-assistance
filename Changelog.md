@@ -1,4 +1,10 @@
 # Changelog
+
+### 0.9.13
+ - Fixes to initialization order (it now inspects "init" functions and handles local {properties, functions} better)
+ - New inspection for "while" loops, to verify if you update the loop parameter (if it is a local var)
+ - Potential dangerous return updates / fixes
+ 
 ###  0.9.12
  - "Function have same name" inspection not triggering on local variables nor on non-functional types
  - quick fixes updated for labeled returned

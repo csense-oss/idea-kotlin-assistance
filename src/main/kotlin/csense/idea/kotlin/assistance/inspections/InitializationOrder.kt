@@ -66,6 +66,7 @@ class InitializationOrder : AbstractKotlinInspection() {
             val nonDelegates = ourClass.findNonDelegatingProperties()
             val nonDelegatesQuickLookup = ourClass.computeQuickIndexedNameLookup()
             val ourFqName = ourClass.fqName?.asString() ?: return@classOrObjectVisitor
+            val initializers = ourClass.collectDescendantsOfType<KtClassInitializer>()
             nonDelegates.forEach { prop: KtProperty ->
                 val innerCached = cached?.properties?.get(prop)
                 val invalidOrders: List<DangerousReference> = if (
@@ -94,6 +95,25 @@ class InitializationOrder : AbstractKotlinInspection() {
                     )
                 }
             }
+            initializers.forEach {
+                val localRefs = it.findLocalReferencesFOrInitializer(
+                        ourFqName,
+                        nonDelegatesQuickLookup.keys)
+                val dangers = localRefs.resolveInvalidOrders(it.name ?: "init", nonDelegatesQuickLookup).apply {
+                    //todo cache ?
+//                    if (propertyCache[ourClass]?.timestampOfClassOrObject != ourClass.modificationStamp) {
+//                        propertyCache.remove(ourClass)
+//                    }
+//                    propertyCache.getOrPut(ourClass) {
+//                        PropertyCacheData(mutableMapOf(), ourClass.modificationStamp)
+//                    }.properties[prop] = Pair(this, prop.modificationStamp)
+                }
+                if (dangers.isNotEmpty()) {
+                    holder.registerProblem(it,
+                            createErrorDescription(dangers)
+                    )
+                }
+            }
         }
     }
     
@@ -119,7 +139,7 @@ class InitializationOrder : AbstractKotlinInspection() {
         
         
         val haveInnerInvalid =
-                allInvalid.joinToString(",\"")
+                allInvalid.joinToString("\",\"")
         
         val innerMessage = if (haveInnerInvalid.isNotBlank()) {
             "\n(Indirect dangerous references = \"$haveInnerInvalid\")\n"
@@ -182,19 +202,26 @@ fun KtProperty.findLocalReferencesForInitializer(
         ourFqNameStart: String,
         nonDelegatesQuickLookup: Set<String>
 ): List<DangerousReference> {
-    return initializer?.collectDescendantsOfType { nameRef: KtNameReferenceExpression ->
+    return initializer?.findLocalReferencesFOrInitializer(ourFqNameStart, nonDelegatesQuickLookup) ?: return listOf()
+}
+
+fun KtExpression.findLocalReferencesFOrInitializer(
+        ourFqNameStart: String,
+        nonDelegatesQuickLookup: Set<String>
+): List<DangerousReference> {
+    return collectDescendantsOfType { nameRef: KtNameReferenceExpression ->
         //skip things that are "ok" / legit.
         nameRef.isPotentialDangerousReference(
                 ourFqNameStart,
                 nonDelegatesQuickLookup,
                 this.name)
-    }?.map {
+    }.map {
         DangerousReference(it,
                 resolveInnerDangerousReferences(
                         ourFqNameStart,
                         nonDelegatesQuickLookup,
                         it.resolveMainReferenceToDescriptors().firstOrNull()?.findPsi()))
-    } ?: return listOf()
+    }
 }
 
 private fun KtNameReferenceExpression.isMethodReference(): Boolean {
@@ -321,13 +348,26 @@ private fun KtNameReferenceExpression.isBeforeOrFunction(
 
 fun KtClassOrObject.computeQuickIndexedNameLookup(): Map<String, Int> {
     val resultingMap = mutableMapOf<String, Int>()
-    collectDescendantsOfType<KtProperty>().forEach { prop ->
-        val name = prop.name ?: return@forEach
+    
+    forEachDescendantOfType<KtProperty> { prop ->
+        if (prop.isLocal) {
+            return@forEachDescendantOfType
+        }
+        val name = prop.name ?: return@forEachDescendantOfType
         resultingMap[name] = prop.startOffsetInParent
     }
-    collectDescendantsOfType<KtFunction>().forEach { function ->
-        val name = function.name ?: return@forEach
+    
+    forEachDescendantOfType<KtFunction> { function ->
+        if (function.isLocal) {//inner functions and lambdas
+            return@forEachDescendantOfType
+        }
+        val name = function.name ?: return@forEachDescendantOfType
         resultingMap[name] = function.startOffsetInParent
+    }
+    
+    forEachDescendantOfType<KtClassInitializer> {
+        val name = it.name ?: "init"
+        resultingMap[name] = it.startOffsetInParent
     }
     return resultingMap
 }

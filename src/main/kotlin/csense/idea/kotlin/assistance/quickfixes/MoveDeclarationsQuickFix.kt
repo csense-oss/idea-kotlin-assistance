@@ -7,7 +7,7 @@ import com.intellij.openapi.ui.*
 import com.intellij.openapi.ui.popup.*
 import com.intellij.psi.*
 import com.intellij.ui.awt.*
-import csense.idea.base.bll.kotlin.findNonDelegatingProperties
+import csense.idea.base.bll.kotlin.*
 import csense.idea.kotlin.assistance.inspections.*
 import org.jetbrains.kotlin.idea.core.*
 import org.jetbrains.kotlin.idea.inspections.*
@@ -23,11 +23,11 @@ class MoveDeclarationsQuickFix(element: KtClassOrObject) : LocalQuickFixOnPsiEle
     override fun getFamilyName(): String {
         return "csense - kotlin assistant - fix declaration order for class"
     }
-
+    
     override fun getText(): String {
         return "Rearrange items to avoid initialization order issues."
     }
-
+    
     override fun invoke(project: Project, file: PsiFile, startElement: PsiElement, endElement: PsiElement) {
         val editor = startElement.findExistingEditor() ?: return
         val asClass = startElement as? KtClassOrObject ?: return
@@ -45,29 +45,29 @@ class MoveDeclarationsQuickFix(element: KtClassOrObject) : LocalQuickFixOnPsiEle
         }
         //since idea does not like us to "remove and add" the same types, we instead creates copies.
         val newSorted = sorted.map { it.copied() }
-
+        
         //step 4 modify class by removing all props and re-added them in the sorted list.
         project.executeWriteCommand(text) {
             nonDelegates.forEachIndexed { index, item ->
                 item.replace(newSorted[index])
             }
         }
-
+        
     }
-
+    
     private fun reportCyclicProblem(editor: Editor) {
         val htmlText = "Could not re-arrange as you have cyclic dependencies, which you have to resolve first."
         val messageType: MessageType = MessageType.ERROR
-
+        
         val location: RelativePoint = JBPopupFactory.getInstance().guessBestPopupLocation(editor)
-
+        
         JBPopupFactory.getInstance()
                 .createHtmlTextBalloonBuilder(htmlText, messageType, null)
                 .createBalloon()
                 .show(location,
                         Balloon.Position.atRight)
     }
-
+    
 }
 
 /*
@@ -99,14 +99,14 @@ private fun MutableVariableNameGraph.sortTopologically(): List<KtProperty>? {
             }
         }
     }
-
+    
     //if leftovers => cyclic dependencies.
     return if (edges.isNotEmpty()) {
         null
     } else {
         l
     }
-
+    
 }
 
 private fun List<KtProperty>.computeNameLookupToVariableNameDep(
@@ -125,11 +125,11 @@ fun List<KtProperty>.computeDependencyDAG(ourFqName: String): MutableVariableNam
     val nonDelegatesQuickLookup = computeQuickIndexedNameLookup()
     val variableMap: Map<String, MutableVariableNameDependencies> =
             this.computeNameLookupToVariableNameDep()
-
+    
     variableMap.forEach { entry: Map.Entry<String, MutableVariableNameDependencies> ->
         graph.edges[entry.value] = mutableListOf()
     }
-
+    
     variableMap.forEach { (_, prop) ->
         val localRefs = prop.realProperty.findLocalReferencesForInitializer(
                 ourFqName,
@@ -164,14 +164,14 @@ data class MutableVariableNameDependencies(
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
-
+        
         other as MutableVariableNameDependencies
-
+        
         if (name != other.name) return false
-
+        
         return true
     }
-
+    
     override fun hashCode(): Int {
         return name.hashCode()
     }

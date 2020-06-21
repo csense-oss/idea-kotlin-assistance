@@ -11,11 +11,11 @@ class ByLazyDelegateQuickFix(element: KtProperty) : LocalQuickFixOnPsiElement(el
     override fun getFamilyName(): String {
         return "csense - kotlin assistant - wrap in by lazy quick fix"
     }
-
+    
     override fun getText(): String {
         return "Wrap the expression in a \"by lazy\" to avoid initialization order issues."
     }
-
+    
     override fun invoke(project: Project, file: PsiFile, startElement: PsiElement, endElement: PsiElement) {
         val asProp = startElement as? KtProperty ?: return
         val fact = KtPsiFactory(project)
@@ -29,5 +29,5 @@ class ByLazyDelegateQuickFix(element: KtProperty) : LocalQuickFixOnPsiElement(el
             }
         }
     }
-
+    
 }

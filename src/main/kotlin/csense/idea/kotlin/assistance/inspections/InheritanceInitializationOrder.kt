@@ -9,11 +9,11 @@ import org.jetbrains.kotlin.idea.inspections.*
 import org.jetbrains.kotlin.psi.*
 
 class InheritanceInitializationOrder : AbstractKotlinInspection() {
-
+    
     override fun getDisplayName(): String {
         return "Wrong use of initialization across inheritance"
     }
-
+    
     override fun getStaticDescription(): String? {
         return """
             Since initialization in inheritance is non trivial, and the use of open / abstract methods / functions coupled with
@@ -22,23 +22,23 @@ class InheritanceInitializationOrder : AbstractKotlinInspection() {
             These unforeseen consequences, does not necessarily manifest immediately, some can even appear to work, until a random event. 
         """.trimIndent()
     }
-
+    
     override fun getDescriptionFileName(): String? {
         return "more desc ? "
     }
-
+    
     override fun getShortName(): String {
         return "InheritanceInitializationOrder"
     }
-
+    
     override fun getGroupDisplayName(): String {
         return Constants.InspectionGroupName
     }
-
+    
     override fun getDefaultLevel(): HighlightDisplayLevel {
         return HighlightDisplayLevel.ERROR
     }
-
+    
     override fun isEnabledByDefault(): Boolean {
         return true
     }
@@ -47,12 +47,12 @@ class InheritanceInitializationOrder : AbstractKotlinInspection() {
 //        return arrayOf(
 //                PropertyFunctionSuppressor("Suppress inheritance initialization issue", groupDisplayName, shortName))
 //    }
-
+    
     //we have 2 parts of this inspection
     //part 1 is the base class "issue", where we are accessing / using abstract / open from fields or the init function.
     //this can / may cause null due to the instantiation order for jvm.
     //which is the second part of this inspection, to see if this is done at the usage site.
-
+    
     override fun buildVisitor(
             holder: ProblemsHolder,
             isOnTheFly: Boolean
@@ -61,7 +61,7 @@ class InheritanceInitializationOrder : AbstractKotlinInspection() {
             val ourFqName = ourClass.fqName?.asString() ?: return@classVisitor
             val isAbstractOrOpen = ourClass.isAbstractOrOpen()
             val isInheriting = ourClass.superTypeListEntries.isNotEmpty()
-
+            
             if (!isInheriting && !isAbstractOrOpen) {
                 //we are not using inheritance bail out
                 return@classVisitor
@@ -76,7 +76,7 @@ class InheritanceInitializationOrder : AbstractKotlinInspection() {
             }
         }
     }
-
+    
     fun handleBaseClass(ourClass: KtClass, ourFqName: String, holder: ProblemsHolder) {
         computeBaseClassDangerousStarts(ourClass, ourFqName)
                 .forEach { (property, references) ->
@@ -89,14 +89,14 @@ class InheritanceInitializationOrder : AbstractKotlinInspection() {
                             ProblemHighlightType.WEAK_WARNING)
                 }
     }
-
+    
     fun handleChildClass(ourClass: KtClass, ourFqName: String, holder: ProblemsHolder) {
         val parentProblems = ourClass.superClass ?: return
         val superProblems = computeBaseClassDangerousStarts(
                 parentProblems,
                 parentProblems.fqName?.asString() ?: "")
-
-
+        
+        
         val constructorArguments = ourClass.getPrimaryConstructorParameterList() ?: return
         val inputParameterNames = constructorArguments.parameters.mapNotNull {
             it.name
@@ -109,18 +109,18 @@ class InheritanceInitializationOrder : AbstractKotlinInspection() {
         val functionsOverriding = functions.filter {
             it.isOverriding()
         }
-
+        
         val toLookFor = (
                 inputParameterNames
                 ).toSet()
-
-
+        
+        
         val superProblemsNames = superProblems.values.map {
             it.map { name ->
                 name.getReferencedName()
             }
         }.flatten().toSet()
-
+        
         val cachedProperties = propertiesOverridingCache[ourClass]
         propertiesOverridden.forEach {
             val cachedProperty = cachedProperties?.cached?.get(it)
@@ -131,7 +131,7 @@ class InheritanceInitializationOrder : AbstractKotlinInspection() {
                                     "References: \"${cachedProperty.first.joinToString("\",\"")}\";\n" +
                                     "This has the potential to cause a NullPointerException \n" +
                                     "if the base class uses this in any initialization  (field or init)")
-
+                    
                 }
                 return@forEach
             }
@@ -150,9 +150,9 @@ class InheritanceInitializationOrder : AbstractKotlinInspection() {
             } else {
                 ent.cached[it] = Pair(listOf(), it.modificationStamp)
             }
-
+            
         }
-
+        
         val cachedFunctions = functionsOverridingCache[ourClass]
         functionsOverriding.forEach { function ->
             val haveCachedFnc = cachedFunctions?.cached?.get(function)
@@ -183,21 +183,21 @@ class InheritanceInitializationOrder : AbstractKotlinInspection() {
                 }
             }
         }
-
+        
     }
-
+    
     class PropertiesOverridingCacheData(
             val cached: MutableMap<KtProperty, Pair<List<String>, Long>>
     )
-
+    
     private val propertiesOverridingCache = SimpleLRUCache<KtClass, PropertiesOverridingCacheData>(500)//todo setting ?
-
+    
     class FunctionsOverridingCacheData(
             val cached: MutableMap<KtNamedFunction, Pair<List<String>, Long>>
     )
-
+    
     private val functionsOverridingCache = SimpleLRUCache<KtClass, FunctionsOverridingCacheData>(500)
-
+    
     fun computeBaseClassDangerousStarts(
             theClass: KtClassOrObject,
             ourFqName: String
@@ -216,10 +216,10 @@ class InheritanceInitializationOrder : AbstractKotlinInspection() {
         val dangerousFunctions = functions.filter {
             it.isAbstractOrOpen()
         }
-
+        
         val namesToLookFor = (dangerousFunctions.map { it.name } + dangerousProperties.map { it.name }).filterNotNull()
         val namesToLookForSet = namesToLookFor.toSet()
-
+        
         val resultingMap: MutableMap<KtProperty, List<KtNameReferenceExpression>> = mutableMapOf()
         nonDelegates.forEach {
             val references = it.findLocalReferences(ourFqName, namesToLookForSet)
@@ -230,8 +230,8 @@ class InheritanceInitializationOrder : AbstractKotlinInspection() {
         superClassDangerousStateCache.put(theClass, Pair(resultingMap, theClass.modificationStamp))
         return resultingMap
     }
-
-
+    
+    
     private val superClassDangerousStateCache:
             SimpleLRUCache<KtClassOrObject, Pair<Map<KtProperty, List<KtNameReferenceExpression>>, Long>> =
             SimpleLRUCache(500)

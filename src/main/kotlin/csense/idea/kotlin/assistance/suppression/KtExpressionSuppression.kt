@@ -5,7 +5,7 @@ import com.intellij.openapi.editor.*
 import com.intellij.openapi.project.*
 import com.intellij.psi.*
 import com.intellij.util.*
-import csense.idea.base.bll.psi.findParentAndBeforeFromType
+import csense.idea.base.bll.psi.*
 import org.jetbrains.kotlin.psi.*
 
 class KtExpressionSuppression(
@@ -16,15 +16,15 @@ class KtExpressionSuppression(
     override fun getFamilyName(): String {
         return familyNameToUse
     }
-
+    
     override fun isAvailable(project: Project, editor: Editor?, element: PsiElement): Boolean {
         return true
     }
-
+    
     override fun getText(): String {
         return displayText
     }
-
+    
     override fun invoke(project: Project, editor: Editor?, element: PsiElement) {
         val prop = element.findParentAndBeforeFromType<KtBlockExpression>() ?: return
         val factory = KtPsiFactory(project)
@@ -37,5 +37,5 @@ class KtExpressionSuppression(
             TODO("Add error handling here")
         }
     }
-
+    
 }

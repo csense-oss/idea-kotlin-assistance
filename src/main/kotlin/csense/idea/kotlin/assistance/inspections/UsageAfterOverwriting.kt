@@ -1,20 +1,17 @@
 package csense.idea.kotlin.assistance.inspections
 
-import com.intellij.codeHighlighting.HighlightDisplayLevel
-import com.intellij.codeInspection.ProblemsHolder
-import com.intellij.codeInspection.SuppressIntentionAction
-import com.intellij.psi.PsiElement
-import csense.idea.base.bll.psi.findParentAndBeforeFromType
-import csense.idea.base.bll.psi.findParentOfType
-import csense.idea.kotlin.assistance.Constants
-import csense.idea.kotlin.assistance.suppression.KtExpressionSuppression
-import csense.kotlin.extensions.primitives.wrapInQuotes
-import org.jetbrains.kotlin.idea.inspections.AbstractKotlinInspection
-import org.jetbrains.kotlin.lexer.KtTokens
-import org.jetbrains.kotlin.nj2k.postProcessing.resolve
+import com.intellij.codeHighlighting.*
+import com.intellij.codeInspection.*
+import com.intellij.psi.*
+import csense.idea.base.bll.psi.*
+import csense.idea.kotlin.assistance.*
+import csense.idea.kotlin.assistance.suppression.*
+import csense.kotlin.extensions.primitives.*
+import org.jetbrains.kotlin.idea.inspections.*
+import org.jetbrains.kotlin.lexer.*
+import org.jetbrains.kotlin.nj2k.postProcessing.*
 import org.jetbrains.kotlin.psi.*
-import org.jetbrains.kotlin.psi.psiUtil.anyDescendantOfType
-import org.jetbrains.kotlin.psi.psiUtil.collectDescendantsOfType
+import org.jetbrains.kotlin.psi.psiUtil.*
 
 class UsageAfterOverwriting : AbstractKotlinInspection() {
     

@@ -1,4 +1,4 @@
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import org.jetbrains.kotlin.gradle.tasks.*
 
 plugins {
     id("org.jetbrains.intellij") version "0.4.21"
@@ -8,7 +8,7 @@ plugins {
 }
 
 group = "csense-idea"
-version = "0.9.12"
+version = "0.9.13"
 // See https://github.com/JetBrains/gradle-intellij-plugin/
 
 intellij {
@@ -25,18 +25,18 @@ repositories {
 }
 
 dependencies {
-    implementation("csense.kotlin:csense-kotlin-jvm:0.0.35")
-    implementation("csense.kotlin:csense-kotlin-annotations-jvm:0.0.17")
-    implementation("csense.kotlin:csense-kotlin-ds-jvm:0.0.24")
-    implementation("csense.idea.base:csense-idea-base:0.1.13")
+    implementation("csense.kotlin:csense-kotlin-jvm:0.0.36")
+    implementation("csense.kotlin:csense-kotlin-annotations-jvm:0.0.18")
+    implementation("csense.kotlin:csense-kotlin-ds-jvm:0.0.25")
+    implementation("csense.idea.base:csense-idea-base:0.1.16")
 }
 
 tasks.getByName<org.jetbrains.intellij.tasks.PatchPluginXmlTask>("patchPluginXml") {
     changeNotes("""
         <ul>
-            <li>"Function have same name" inspection not triggering on local variables nor on non-functional types</li>
-            <li> quick fixes updated for labeled returned</li>
-            <li> text updates </li>
+            <li>Potential dangerous return updates / fixes</li>
+            <li>Fixes to initialization order (it now inspects "init" functions and handles local {properties, functions} better)</li>
+            <li>New inspection for "while" loops, to verify if you update the loop parameter (if it is a local var)</li>
          </ul>
       """)
 }
