@@ -55,7 +55,7 @@ class SimpleInfiniteRecursionInspection : AbstractKotlinInspection() {
     ): KtVisitorVoid {
         return callExpressionVisitor { exp: KtCallExpression ->
 //            if (exp.resolve() == exp.findParentOfType<KtFunction>()) {
-//                holder.registerProblem(exp, "todo must see more.")
+//                holder.registerProblemSafe(exp, "todo must see more.")
 //            }
         }
     }

@@ -8,7 +8,7 @@ plugins {
 }
 
 group = "csense-idea"
-version = "0.9.13"
+version = "0.9.14"
 // See https://github.com/JetBrains/gradle-intellij-plugin/
 
 intellij {
@@ -28,15 +28,13 @@ dependencies {
     implementation("csense.kotlin:csense-kotlin-jvm:0.0.36")
     implementation("csense.kotlin:csense-kotlin-annotations-jvm:0.0.18")
     implementation("csense.kotlin:csense-kotlin-ds-jvm:0.0.25")
-    implementation("csense.idea.base:csense-idea-base:0.1.16")
+    implementation("csense.idea.base:csense-idea-base:0.1.19")
 }
 
 tasks.getByName<org.jetbrains.intellij.tasks.PatchPluginXmlTask>("patchPluginXml") {
     changeNotes("""
         <ul>
-            <li>Potential dangerous return updates / fixes</li>
-            <li>Fixes to initialization order (it now inspects "init" functions and handles local {properties, functions} better)</li>
-            <li>New inspection for "while" loops, to verify if you update the loop parameter (if it is a local var)</li>
+            <li>more fixes / improvements</li>
          </ul>
       """)
 }

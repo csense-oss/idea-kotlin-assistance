@@ -3,6 +3,7 @@ package csense.idea.kotlin.assistance.inspections
 import com.intellij.codeHighlighting.*
 import com.intellij.codeInspection.*
 import com.intellij.psi.*
+import csense.idea.base.bll.*
 import csense.idea.base.bll.psi.*
 import csense.idea.kotlin.assistance.*
 import csense.idea.kotlin.assistance.suppression.*
@@ -98,7 +99,7 @@ class UsageAfterOverwriting : AbstractKotlinInspection() {
                 if (usesAssignment && !haveRightChangedInBetween) {
                     val leftName = leftResolved.name ?: ""
                     val rightName = rightResolved.name ?: ""
-                    holder.registerProblem(usageInvocation, "Using ${leftName.wrapInQuotes()} after overwriting it with ${rightName.wrapInQuotes()}, thus they are the same, this looks like a bug (use after overwrite in conjunction with overwritten value).")
+                    holder.registerProblemSafe(usageInvocation, "Using ${leftName.wrapInQuotes()} after overwriting it with ${rightName.wrapInQuotes()}, thus they are the same, this looks like a bug (use after overwrite in conjunction with overwritten value).")
                 }
                 
             }

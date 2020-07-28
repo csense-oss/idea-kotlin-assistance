@@ -3,6 +3,7 @@ package csense.idea.kotlin.assistance.inspections
 import com.intellij.codeHighlighting.*
 import com.intellij.codeInspection.*
 import com.intellij.psi.*
+import csense.idea.base.bll.*
 import csense.idea.base.bll.kotlin.*
 import csense.idea.base.bll.psi.*
 import csense.idea.kotlin.assistance.*
@@ -89,7 +90,7 @@ class InitializationOrder : AbstractKotlinInspection() {
                     }
                 }
                 if (invalidOrders.isNotEmpty()) {
-                    holder.registerProblem(prop,
+                    holder.registerProblemSafe(prop,
                             createErrorDescription(invalidOrders),
                             *createQuickFixes(prop, ourClass)
                     )
@@ -109,7 +110,7 @@ class InitializationOrder : AbstractKotlinInspection() {
 //                    }.properties[prop] = Pair(this, prop.modificationStamp)
                 }
                 if (dangers.isNotEmpty()) {
-                    holder.registerProblem(it,
+                    holder.registerProblemSafe(it,
                             createErrorDescription(dangers)
                     )
                 }

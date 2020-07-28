@@ -2,6 +2,7 @@ package csense.idea.kotlin.assistance.inspections
 
 import com.intellij.codeHighlighting.*
 import com.intellij.codeInspection.*
+import csense.idea.base.bll.*
 import csense.idea.base.bll.kotlin.*
 import csense.idea.kotlin.assistance.*
 import csense.kotlin.ds.cache.*
@@ -81,12 +82,13 @@ class InheritanceInitializationOrder : AbstractKotlinInspection() {
         computeBaseClassDangerousStarts(ourClass, ourFqName)
                 .forEach { (property, references) ->
                     val refNames = references.map { it.getReferencedName() }.distinct()
-                    holder.registerProblem(property,
+                    holder.registerProblemSafe(property,
                             "You are using a constructor provided argument for an overridden property\n" +
                                     "For the following: \"${refNames.joinToString("\",\"")}\" - " +
                                     "This has the potential to cause a NullPointerException \n" +
-                                    "if the base class uses this in any initialization  (field or init)",
-                            ProblemHighlightType.WEAK_WARNING)
+                                    "if the base class uses this in any initialization  (field or init)"
+                    //        ,ProblemHighlightType.WEAK_WARNING
+                    )
                 }
     }
     
@@ -126,7 +128,7 @@ class InheritanceInitializationOrder : AbstractKotlinInspection() {
             val cachedProperty = cachedProperties?.cached?.get(it)
             if (cachedProperty != null && cachedProperty.second == it.modificationStamp) {
                 if (cachedProperty.first.isNotEmpty()) {
-                    holder.registerProblem(it,
+                    holder.registerProblemSafe(it,
                             "You are using a constructor provided argument for an overridden property\n" +
                                     "References: \"${cachedProperty.first.joinToString("\",\"")}\";\n" +
                                     "This has the potential to cause a NullPointerException \n" +
@@ -142,7 +144,7 @@ class InheritanceInitializationOrder : AbstractKotlinInspection() {
             if (usesConstructorParameterInOverridden.isNotEmpty() && superProblemsNames.contains(it.name ?: "")) {
                 val refNames = usesConstructorParameterInOverridden.map { exp -> exp.getReferencedName() }.distinct()
                 ent.cached[it] = Pair(refNames, it.modificationStamp)
-                holder.registerProblem(it,
+                holder.registerProblemSafe(it,
                         "You are using a constructor provided argument for an overridden property\n" +
                                 "References: \"${refNames.joinToString("\",\"")}\";\n" +
                                 "This has the potential to cause a NullPointerException \n" +
@@ -161,7 +163,7 @@ class InheritanceInitializationOrder : AbstractKotlinInspection() {
                     return@forEach//no problems :)
                 }
                 val refNames = haveCachedFnc.first
-                holder.registerProblem(function,
+                holder.registerProblemSafe(function,
                         "You are using a constructor provided argument for an overridden function.\n" +
                                 "References: \"${refNames.joinToString("\",\"")}\";\n" +
                                 "This will cause a NullPointerException, since it is used in the base class initialization")
@@ -174,7 +176,7 @@ class InheritanceInitializationOrder : AbstractKotlinInspection() {
                                 ?: "")) {
                     val refNames = usesConstructorParameterInOverridden.map { exp -> exp.getReferencedName() }.distinct()
                     ent.cached[function] = Pair(refNames, function.modificationStamp)
-                    holder.registerProblem(function,
+                    holder.registerProblemSafe(function,
                             "You are using a constructor provided argument for an overridden function.\n" +
                                     "References: \"${refNames.joinToString("\",\"")}\";\n" +
                                     "This will cause a NullPointerException, since it is used in the base class initialization")

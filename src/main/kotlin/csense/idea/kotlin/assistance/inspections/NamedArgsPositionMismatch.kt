@@ -100,11 +100,11 @@ class NamedArgsPositionMismatch : AbstractKotlinInspection() {
             when {
                 argName == null -> {
                     val text = "`${it.name}` should be at index ${it.shouldBeAtIndex}, but is at ${it.parameterIndex}"
-                    holder.registerProblem(arg ?: atElement, text)
+                    holder.registerProblemSafe(arg ?: atElement, text)
                 }
                 argName != it.name -> {
                     val text = "`${it.name}` matches another argument (not same named argument)"
-                    holder.registerProblem(arg, text)
+                    holder.registerProblemSafe(arg, text)
                 }
             }
             
@@ -115,7 +115,7 @@ class NamedArgsPositionMismatch : AbstractKotlinInspection() {
         val names = mismatches.distinctBy { it.name }.joinToString(",") {
             "\"${it.name}\" - should be at position ${it.shouldBeAtIndex}"
         }
-        holder.registerProblem(atElement,
+        holder.registerProblemSafe(atElement,
                 "You have mismatched arguments names \n($names)")
     }
     

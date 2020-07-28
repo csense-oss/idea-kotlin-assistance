@@ -3,6 +3,7 @@ package csense.idea.kotlin.assistance.inspections
 import com.intellij.codeHighlighting.*
 import com.intellij.codeInspection.*
 import com.intellij.psi.*
+import csense.idea.base.bll.*
 import csense.idea.base.bll.kotlin.*
 import csense.idea.kotlin.assistance.*
 import csense.idea.kotlin.assistance.suppression.*
@@ -91,7 +92,7 @@ class FunctionAndValueInvocationNamingInspection : AbstractKotlinInspection() {
             functions.forEach { fnc: KtNamedFunction ->
                 val propFound = mappedProperties[fnc.nameAsSafeName]
                 if (propFound != null) {
-                    holder.registerProblem(
+                    holder.registerProblemSafe(
                             propFound,
                             "Function have same name as property, please change property name (or function) to avoid confusion and or invocation clarity")
                 }

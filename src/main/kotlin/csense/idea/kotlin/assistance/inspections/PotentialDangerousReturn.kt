@@ -2,6 +2,7 @@ package csense.idea.kotlin.assistance.inspections
 
 import com.intellij.codeHighlighting.*
 import com.intellij.codeInspection.*
+import csense.idea.base.bll.*
 import csense.idea.base.bll.kotlin.*
 import csense.idea.kotlin.assistance.*
 import csense.idea.kotlin.assistance.quickfixes.*
@@ -10,11 +11,11 @@ import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.psi.psiUtil.*
 
 class PotentialDangerousReturn : AbstractKotlinInspection() {
-
+    
     override fun getDisplayName(): String {
         return "Potentially dangerous return from lambda"
     }
-
+    
     override fun getStaticDescription(): String? {
         return """
             Since it is valid kotlin to return from a inline fun call (with a plain lambda), it can quite easily fall under the radar 
@@ -22,27 +23,27 @@ class PotentialDangerousReturn : AbstractKotlinInspection() {
             break scope rules and to signal the intent, so its not "left there" silent.
         """.trimIndent()
     }
-
+    
     override fun getDescriptionFileName(): String? {
         return ".."
     }
-
+    
     override fun getShortName(): String {
         return "PotentialDangerousReturn"
     }
-
+    
     override fun getGroupDisplayName(): String {
         return Constants.InspectionGroupName
     }
-
+    
     override fun getDefaultLevel(): HighlightDisplayLevel {
         return HighlightDisplayLevel.ERROR
     }
-
+    
     override fun isEnabledByDefault(): Boolean {
         return true
     }
-
+    
     override fun buildVisitor(
             holder: ProblemsHolder,
             isOnTheFly: Boolean
@@ -59,12 +60,12 @@ class PotentialDangerousReturn : AbstractKotlinInspection() {
             } else {
                 firstChildAsReturn
             } ?: return@namedFunctionVisitor
-
+            
             val fncCalls = firstExp.collectDescendantsOfType<KtCallExpression> { exp ->
                 //only look for function calls that involves inline (and not only on parameters that are no inline).
                 exp.resolveMainReferenceAsKtFunction()?.isInlineWithInlineParameters() ?: false
             }
-
+            
             val returnQuickFixesMap = mutableMapOf<KtReturnExpression, DangerousReturnInternalStructure>()
             fncCalls.forEach { firstCall ->
                 val innerReturns = firstCall.collectDescendantsOfType<KtReturnExpression>()
@@ -76,7 +77,7 @@ class PotentialDangerousReturn : AbstractKotlinInspection() {
                         returnQuickFixesMap.getOrPut(first, {
                             DangerousReturnInternalStructure(ourFnc.name ?: "", mutableListOf())
                         }).inlineFunctionNamesByInnermost.add(labelName)
-
+                        
                     }
                 }
             }
@@ -87,7 +88,7 @@ class PotentialDangerousReturn : AbstractKotlinInspection() {
                 ) + namesInOrderFromInnermost.mapIndexed { index: Int, s: String ->
                     LabeledReturnQuickFix(it.key, index + 1, s)
                 }
-                holder.registerProblem(
+                holder.registerProblemSafe(
                         it.key,
                         "Dangerous return statement in inline function \n" +
                                 " - is your intent to return from this lambda or (any/ the) outer function(s) ? \n" +

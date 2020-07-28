@@ -2,6 +2,7 @@ package csense.idea.kotlin.assistance.inspections
 
 import com.intellij.codeHighlighting.*
 import com.intellij.codeInspection.*
+import csense.idea.base.bll.*
 import csense.idea.base.bll.kotlin.*
 import csense.idea.kotlin.assistance.*
 import org.jetbrains.kotlin.idea.inspections.*
@@ -93,7 +94,7 @@ class WhileParameterNotUpdatedInspection : AbstractKotlinInspection() {
             }
             //we are in a while loop, with a "local var" we are testing for. so lets see if we actually change it inside of the while code.
             if (anyValidAssignments != true) {
-                holder.registerProblem(
+                holder.registerProblemSafe(
                         condition,
                         "While loop parameter `${localVarVariableWeAreTesting.getReferencedName()}` is not updated (or updated to the same value) on each iteration"
                 )
