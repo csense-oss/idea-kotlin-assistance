@@ -1,5 +1,10 @@
 # Changelog
 
+### 0.9.14
+- Fixes to mismatched arg names (function names)
+- Fixes to mismatched arg names (accepts camelcase as well)
+- Fixes to initialization order (some non-static to static got displayed as an issue)
+
 ### 0.9.13
  - Fixes to initialization order (it now inspects "init" functions and handles local {properties, functions} better)
  - New inspection for "while" loops, to verify if you update the loop parameter (if it is a local var)

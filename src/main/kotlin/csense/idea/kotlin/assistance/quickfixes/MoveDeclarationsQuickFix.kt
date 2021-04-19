@@ -23,11 +23,11 @@ class MoveDeclarationsQuickFix(element: KtClassOrObject) : LocalQuickFixOnPsiEle
     override fun getFamilyName(): String {
         return "csense - kotlin assistant - fix declaration order for class"
     }
-    
+
     override fun getText(): String {
         return "Rearrange items to avoid initialization order issues."
     }
-    
+
     override fun invoke(project: Project, file: PsiFile, startElement: PsiElement, endElement: PsiElement) {
         val editor = startElement.findExistingEditor() ?: return
         val asClass = startElement as? KtClassOrObject ?: return
@@ -45,29 +45,31 @@ class MoveDeclarationsQuickFix(element: KtClassOrObject) : LocalQuickFixOnPsiEle
         }
         //since idea does not like us to "remove and add" the same types, we instead creates copies.
         val newSorted = sorted.map { it.copied() }
-        
+
         //step 4 modify class by removing all props and re-added them in the sorted list.
         project.executeWriteCommand(text) {
             nonDelegates.forEachIndexed { index, item ->
                 item.replace(newSorted[index])
             }
         }
-        
+
     }
-    
+
     private fun reportCyclicProblem(editor: Editor) {
         val htmlText = "Could not re-arrange as you have cyclic dependencies, which you have to resolve first."
         val messageType: MessageType = MessageType.ERROR
-        
+
         val location: RelativePoint = JBPopupFactory.getInstance().guessBestPopupLocation(editor)
-        
+
         JBPopupFactory.getInstance()
-                .createHtmlTextBalloonBuilder(htmlText, messageType, null)
-                .createBalloon()
-                .show(location,
-                        Balloon.Position.atRight)
+            .createHtmlTextBalloonBuilder(htmlText, messageType, null)
+            .createBalloon()
+            .show(
+                location,
+                Balloon.Position.atRight
+            )
     }
-    
+
 }
 
 /*
@@ -99,14 +101,14 @@ private fun MutableVariableNameGraph.sortTopologically(): List<KtProperty>? {
             }
         }
     }
-    
+
     //if leftovers => cyclic dependencies.
     return if (edges.isNotEmpty()) {
         null
     } else {
         l
     }
-    
+
 }
 
 private fun List<KtProperty>.computeNameLookupToVariableNameDep(
@@ -124,21 +126,22 @@ fun List<KtProperty>.computeDependencyDAG(ourFqName: String): MutableVariableNam
     val graph = MutableVariableNameGraph(mutableMapOf(), mutableListOf())
     val nonDelegatesQuickLookup = computeQuickIndexedNameLookup()
     val variableMap: Map<String, MutableVariableNameDependencies> =
-            this.computeNameLookupToVariableNameDep()
-    
+        this.computeNameLookupToVariableNameDep()
+
     variableMap.forEach { entry: Map.Entry<String, MutableVariableNameDependencies> ->
         graph.edges[entry.value] = mutableListOf()
     }
-    
+
     variableMap.forEach { (_, prop) ->
         val localRefs = prop.realProperty.findLocalReferencesForInitializer(
-                ourFqName,
-                nonDelegatesQuickLookup.keys)
+            ourFqName,
+            nonDelegatesQuickLookup
+        )
         localRefs.forEach { ref ->
             val itName = ref.mainReference.resolveMainReferenceToDescriptors().firstOrNull()?.name?.identifier
-                    ?: return null
+                ?: return@computeDependencyDAG null
             val refsTo = variableMap[itName]
-                    ?: return null
+                ?: return@computeDependencyDAG null
             prop.dependsOn.add(refsTo) //I depend on
             graph.edges[refsTo]?.add(prop)
         }
@@ -152,26 +155,26 @@ fun List<KtProperty>.computeDependencyDAG(ourFqName: String): MutableVariableNam
 }
 
 data class MutableVariableNameGraph(
-        val edges: MutableMap<MutableVariableNameDependencies, MutableList<MutableVariableNameDependencies>>,
-        val startingNodes: MutableList<MutableVariableNameDependencies>
+    val edges: MutableMap<MutableVariableNameDependencies, MutableList<MutableVariableNameDependencies>>,
+    val startingNodes: MutableList<MutableVariableNameDependencies>
 )
 
 data class MutableVariableNameDependencies(
-        val realProperty: KtProperty,
-        val name: String,
-        val dependsOn: MutableList<MutableVariableNameDependencies>
+    val realProperty: KtProperty,
+    val name: String,
+    val dependsOn: MutableList<MutableVariableNameDependencies>
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
-        
+
         other as MutableVariableNameDependencies
-        
+
         if (name != other.name) return false
-        
+
         return true
     }
-    
+
     override fun hashCode(): Int {
         return name.hashCode()
     }

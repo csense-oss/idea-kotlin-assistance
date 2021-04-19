@@ -74,9 +74,9 @@ class PotentialDangerousReturn : AbstractKotlinInspection() {
                     //if ourFnc is not a labeled expression then we have 2 returns nested as the "last" things akk, potentially dangerous.
                     if (first.labeledExpression == null) {
                         val labelName = firstCall.calleeExpression?.text ?: "-"
-                        returnQuickFixesMap.getOrPut(first, {
+                        returnQuickFixesMap.getOrPut(first) {
                             DangerousReturnInternalStructure(ourFnc.name ?: "", mutableListOf())
-                        }).inlineFunctionNamesByInnermost.add(labelName)
+                        }.inlineFunctionNamesByInnermost.add(labelName)
                         
                     }
                 }

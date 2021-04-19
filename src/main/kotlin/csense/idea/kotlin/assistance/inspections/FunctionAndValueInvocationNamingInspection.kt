@@ -45,7 +45,7 @@ class FunctionAndValueInvocationNamingInspection : AbstractKotlinInspection() {
         return "Function and variable name overlap"
     }
     
-    override fun getStaticDescription(): String? {
+    override fun getStaticDescription(): String {
         //the ctrl  + f1 box +  desc of the inspection.
         return """
             This inspection tells whenever a class have a function with a given parameter / property name.
@@ -53,7 +53,7 @@ class FunctionAndValueInvocationNamingInspection : AbstractKotlinInspection() {
         """.trimIndent()
     }
     
-    override fun getDescriptionFileName(): String? {
+    override fun getDescriptionFileName(): String {
         return "more desc ? "
     }
     
@@ -69,7 +69,7 @@ class FunctionAndValueInvocationNamingInspection : AbstractKotlinInspection() {
         return true
     }
     
-    override fun getSuppressActions(element: PsiElement?): Array<SuppressIntentionAction>? {
+    override fun getSuppressActions(element: PsiElement?): Array<SuppressIntentionAction> {
         return arrayOf(
                 KtExpressionSuppression("Suppress Function and variable name overlap issue", groupDisplayName, shortName))
     }
@@ -99,16 +99,4 @@ class FunctionAndValueInvocationNamingInspection : AbstractKotlinInspection() {
             }
         }
     }
-}
-
-fun KtClassOrObject.getAllClassProperties(): List<KtNamedDeclaration> {
-    val localFields = collectDescendantsOfType<KtProperty> {
-        !it.isLocal && (it.resolveType()?.isFunctionType ?: false)
-    }
-    val constructorFields: List<KtNamedDeclaration> = primaryConstructor?.let {
-        it.collectDescendantsOfType { param: KtParameter ->
-            param.hasValOrVar() && param.isFunctionalType()
-        }
-    } ?: listOf()
-    return localFields + constructorFields
 }

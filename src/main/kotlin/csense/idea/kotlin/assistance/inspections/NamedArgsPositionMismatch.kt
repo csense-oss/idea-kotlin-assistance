@@ -4,6 +4,7 @@ import com.intellij.codeHighlighting.*
 import com.intellij.codeInspection.*
 import com.intellij.psi.*
 import csense.idea.base.bll.*
+import csense.idea.base.bll.kotlin.*
 import csense.idea.kotlin.assistance.*
 import csense.idea.kotlin.assistance.suppression.*
 import org.jetbrains.kotlin.idea.caches.resolve.*
@@ -13,12 +14,12 @@ import org.jetbrains.kotlin.resolve.annotations.*
 import org.jetbrains.kotlin.types.*
 
 class NamedArgsPositionMismatch : AbstractKotlinInspection() {
-    
+
     override fun getDisplayName(): String {
         return "Mismatched naming for parameter names"
     }
-    
-    override fun getStaticDescription(): String? {
+
+    override fun getStaticDescription(): String {
         //the ctrl  + f1 box +  desc of the inspection.
         return """
             This inspection tells whenever a used name (such as a variable)
@@ -26,35 +27,36 @@ class NamedArgsPositionMismatch : AbstractKotlinInspection() {
             This generally is an error, such as swapping arguments around or parameter names for that matter.
         """.trimIndent()
     }
-    
-    override fun getDescriptionFileName(): String? {
+
+    override fun getDescriptionFileName(): String {
         return "more desc ? "
     }
-    
+
     override fun getShortName(): String {
         return "NamedArgsPositionMismatch"
     }
-    
+
     override fun getGroupDisplayName(): String {
         return Constants.InspectionGroupName
     }
-    
+
     override fun isEnabledByDefault(): Boolean {
         return true
     }
-    
-    override fun getSuppressActions(element: PsiElement?): Array<SuppressIntentionAction>? {
+
+    override fun getSuppressActions(element: PsiElement?): Array<SuppressIntentionAction> {
         return arrayOf(
-                KtExpressionSuppression("Suppress naming mismatch issue", groupDisplayName, shortName))
+            KtExpressionSuppression("Suppress naming mismatch issue", groupDisplayName, shortName)
+        )
     }
-    
+
     override fun getDefaultLevel(): HighlightDisplayLevel {
         return HighlightDisplayLevel.ERROR
     }
-    
+
     override fun buildVisitor(
-            holder: ProblemsHolder,
-            isOnTheFly: Boolean
+        holder: ProblemsHolder,
+        isOnTheFly: Boolean
     ): KtVisitorVoid {
         return callExpressionVisitor {
             val call: KtCallExpression = it
@@ -62,7 +64,7 @@ class NamedArgsPositionMismatch : AbstractKotlinInspection() {
                 //no arguments to check
                 return@callExpressionVisitor
             }
-            
+
             val callingFunction = call.resolveToCall()?.resultingDescriptor ?: return@callExpressionVisitor
             val usedNames = call.findInvocationArgumentNamesNew()
             val originalParameterNames = callingFunction.findOriginalMethodArgumentNames()
@@ -75,12 +77,13 @@ class NamedArgsPositionMismatch : AbstractKotlinInspection() {
             if (misMatches.isNotEmpty()) {
                 reportProblem(call, misMatches, holder)
             }
-            
+
             call.lambdaArguments.forEach { lambdaArg ->
-                
+
                 val argName = lambdaArg.getLambdaExpression() ?: return@forEach
-                val usedLambdaArgumentNames = argName.valueParameters.map { parameters -> parameters.name }
-                
+                val usedLambdaArgumentNames =
+                    argName.valueParameters.map { parameters -> ArgumentName(parameters.name ?: "", listOf()) }
+
                 val namedArgs = callingFunction.valueParameters[0].type.arguments.map { typeArgs ->
                     typeArgs.type.findLambdaParameterName()
                 }
@@ -88,11 +91,11 @@ class NamedArgsPositionMismatch : AbstractKotlinInspection() {
                 if (lambdaMisMatch.isNotEmpty()) {
                     reportLambdaProblem(call, lambdaMisMatch, holder)
                 }
-                
+
             }
         }
     }
-    
+
     fun reportProblem(atElement: KtCallExpression, mismatches: List<MismatchedName>, holder: ProblemsHolder) {
         mismatches.forEach {
             val arg = atElement.valueArguments.getOrNull(it.parameterIndex)
@@ -107,54 +110,76 @@ class NamedArgsPositionMismatch : AbstractKotlinInspection() {
                     holder.registerProblemSafe(arg, text)
                 }
             }
-            
+
         }
     }
-    
+
     fun reportLambdaProblem(atElement: PsiElement, mismatches: List<MismatchedName>, holder: ProblemsHolder) {
         val names = mismatches.distinctBy { it.name }.joinToString(",") {
             "\"${it.name}\" - should be at position ${it.shouldBeAtIndex}"
         }
-        holder.registerProblemSafe(atElement,
-                "You have mismatched arguments names \n($names)")
+        holder.registerProblemSafe(
+            atElement,
+            "You have mismatched arguments names \n($names)"
+        )
     }
-    
-    
+
+
     fun computeMismatchingNames(
-            usedNames: List<String?>,
-            originalParameterNames: List<String?>,
-            argumentName: List<String?>
+        usedNames: List<ArgumentName?>,
+        originalParameterNames: List<String?>,
+        argumentName: List<String?>
     ): List<MismatchedName> {
         val originalNames = originalParameterNames.filterNotNull().toSet()
         val result = mutableListOf<MismatchedName>()
         usedNames.forEachIndexed { index, name ->
-            if (name == null || !originalNames.contains(name)) {
+            if (name == null || !originalNames.contains(name.resultingName)) {
                 return@forEachIndexed
             }
             //only look at those who are contained.
             val org = originalParameterNames.getOrNull(index)
-            if (org == null || org != name) {
+            if (org == null || !org.areEqualOrCamelCaseEqual(name)) {
                 //ERROR !! mismatching name but is declared somewhere else.
-                result.add(MismatchedName(name, index, originalParameterNames.indexOf(name)))
+                result.add(
+                    MismatchedName(
+                        name.resultingName,
+                        index,
+                        originalParameterNames.indexOf(name.resultingName)
+                    )
+                )
             } else {
                 val argName = argumentName.getOrNull(index)
-                if (argName != null && argName != name) {
+                if (argName != null && argName != name.resultingName) {
                     //todo improve...
-                    result.add(MismatchedName(name, index, originalParameterNames.indexOf(name)))
+                    result.add(
+                        MismatchedName(
+                            name.resultingName,
+                            index,
+                            originalParameterNames.indexOf(name.resultingName)
+                        )
+                    )
                 }
             }
         }
         return result
     }
-    
-    
+
+    fun String.areEqualOrCamelCaseEqual(argumentName: ArgumentName): Boolean {
+        val isResultingNameEquals = this == argumentName.resultingName
+        if (isResultingNameEquals) {
+            return true
+        }
+        val asString = argumentName.nameParts.joinToString("")
+        return asString.endsWith(this, ignoreCase = true)
+    }
+
 }
 
 data class MismatchedName(val name: String, val parameterIndex: Int, val shouldBeAtIndex: Int)
 
 fun KotlinType.findLambdaParameterName(): String? {
     return annotations.findAnnotation(
-            Constants.lambdaParameterNameAnnotationFqName
+        Constants.lambdaParameterNameAnnotationFqName
     )?.argumentValue("name")?.value
             as? String
 }
@@ -165,33 +190,28 @@ fun KotlinType.findLambdaParameterName(): String? {
  * @receiver KtCallExpression
  * @return List<String?>
  */
-fun KtCallExpression.findInvocationArgumentNamesNew(): List<String?> {
-    return valueArguments.map {
-        it?.getArgumentExpression()?.resolvePotentialArgumentName()
+fun KtCallExpression.findInvocationArgumentNamesNew(): List<ArgumentName?> {
+    return valueArguments.map { it: KtValueArgument? ->
+        it?.getArgumentExpression()?.resolvePotentialArgumentName(listOf())
     }
 }
 
-fun KtExpression.resolvePotentialArgumentName(): String? = when (this) {
-    is KtNameReferenceExpression -> getReferencedName()
+/**
+ * Used to try and find a potential name for a given argument.
+ * @receiver KtExpression
+ * @return String?
+ */
+tailrec fun KtExpression.resolvePotentialArgumentName(nameParts: List<String>): ArgumentName? = when (this) {
+    is KtNameReferenceExpression -> ArgumentName(getReferencedName(), nameParts + listOf(getReferencedName()))
     is KtDotQualifiedExpression -> {
-        val lhs = receiverExpression as? KtNameReferenceExpression
-        val rhs = selectorExpression as? KtNameReferenceExpression
-        rhs?.resolvePotentialArgumentName() ?: lhs?.resolvePotentialArgumentName()
-    }//todo callExpression,akk class with a name then something in that.
-    //akk
-    /*
-    data class Bottom(val top: Double)
-    data class Top(val bottom: Bottom)
-    fun use(top:Double) {}
-    fun test() {
-        use(Top(Bottom(42.0)).bottom.top)
+        (selectorExpression ?: receiverExpression).resolvePotentialArgumentName(
+            nameParts + listOfNotNull(receiverExpression.text)
+        )
     }
-    */
+    is KtCallExpression -> {
+        calleeExpression?.resolvePotentialArgumentName(nameParts)
+    }
     else -> null
 }
 
-fun KtCallExpression.findArgumentNames(): List<String?> {
-    return valueArguments.map {
-        it?.getArgumentName()?.text
-    }
-}
+data class ArgumentName(val resultingName: String, val nameParts: List<String>)
