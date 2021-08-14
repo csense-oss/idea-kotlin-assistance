@@ -44,7 +44,7 @@ class MoveDeclarationsQuickFix(element: KtClassOrObject) : LocalQuickFixOnPsiEle
             return
         }
         //since idea does not like us to "remove and add" the same types, we instead creates copies.
-        val newSorted = sorted.map { it.copied() }
+        val newSorted = sorted.map { it.copy() }
 
         //step 4 modify class by removing all props and re-added them in the sorted list.
         project.executeWriteCommand(text) {
