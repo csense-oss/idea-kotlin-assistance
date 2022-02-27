@@ -68,12 +68,7 @@ class FunctionAndValueInvocationNamingInspection : AbstractKotlinInspection() {
     override fun isEnabledByDefault(): Boolean {
         return true
     }
-    
-    override fun getSuppressActions(element: PsiElement?): Array<SuppressIntentionAction> {
-        return arrayOf(
-                KtExpressionSuppression("Suppress Function and variable name overlap issue", groupDisplayName, shortName))
-    }
-    
+
     override fun getDefaultLevel(): HighlightDisplayLevel {
         return HighlightDisplayLevel.WARNING
     }

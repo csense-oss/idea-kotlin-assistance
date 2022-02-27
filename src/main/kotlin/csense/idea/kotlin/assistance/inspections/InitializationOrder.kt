@@ -54,12 +54,6 @@ class InitializationOrder : AbstractKotlinInspection() {
         return true
     }
 
-    override fun getSuppressActions(element: PsiElement?): Array<SuppressIntentionAction>? {
-        return arrayOf(
-            PropertyFunctionSuppressor("Suppress initialization issue", groupDisplayName, shortName)
-        )
-    }
-
     override fun buildVisitor(
         holder: ProblemsHolder,
         isOnTheFly: Boolean

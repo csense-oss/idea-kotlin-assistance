@@ -44,12 +44,6 @@ class UsageAfterOverwriting : AbstractKotlinInspection() {
         return true
     }
 
-    override fun getSuppressActions(element: PsiElement?): Array<SuppressIntentionAction>? {
-        return arrayOf(
-            KtExpressionSuppression("Suppress naming mismatch issue", groupDisplayName, shortName)
-        )
-    }
-
     override fun getDefaultLevel(): HighlightDisplayLevel {
         return HighlightDisplayLevel.WARNING
     }
