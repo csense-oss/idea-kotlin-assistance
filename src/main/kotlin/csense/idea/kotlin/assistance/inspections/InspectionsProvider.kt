@@ -12,7 +12,7 @@ class InspectionsProvider : InspectionToolProvider {
 //                SimpleInfiniteRecursionInspection::class.java,
                 FunctionAndValueInvocationNamingInspection::class.java,
                 WhileParameterNotUpdatedInspection::class.java,
-                UsageAfterOverwriting::class.java)
+                MutableVariableUsageAfterOverwriting::class.java)
     }
     
 }

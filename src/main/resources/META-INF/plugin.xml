@@ -31,5 +31,5 @@
         <!-- Add your actions here -->
     </actions>
 
-    <idea-version since-build="192"/>
+    <idea-version since-build="213"/>
 </idea-plugin>

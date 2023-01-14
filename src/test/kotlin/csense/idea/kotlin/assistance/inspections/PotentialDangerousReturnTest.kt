@@ -13,8 +13,8 @@ class PotentialDangerousReturnTest: KotlinLightCodeInsightFixtureTestCaseJunit4(
     }
 
     @Test
-    fun first(){
-        myFixture.testHighlighting("First.kt")
+    fun anyReturn(){
+        myFixture.testHighlighting("AnyReturn.kt")
     }
 
 

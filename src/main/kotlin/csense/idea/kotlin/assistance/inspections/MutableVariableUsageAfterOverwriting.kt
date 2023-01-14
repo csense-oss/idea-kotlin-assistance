@@ -2,33 +2,30 @@ package csense.idea.kotlin.assistance.inspections
 
 import com.intellij.codeHighlighting.*
 import com.intellij.codeInspection.*
-import com.intellij.psi.*
 import csense.idea.base.bll.*
 import csense.idea.base.bll.kotlin.*
 import csense.idea.base.bll.psi.*
 import csense.idea.kotlin.assistance.*
-import csense.idea.kotlin.assistance.suppression.*
-import csense.kotlin.extensions.primitives.*
+import csense.kotlin.specificExtensions.string.*
 import org.jetbrains.kotlin.idea.inspections.*
-import org.jetbrains.kotlin.lexer.*
 import org.jetbrains.kotlin.nj2k.postProcessing.*
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.psi.psiUtil.*
 
-class UsageAfterOverwriting : AbstractKotlinInspection() {
+class MutableVariableUsageAfterOverwriting : AbstractKotlinInspection() {
 
     override fun getDisplayName(): String {
-        return "Usage value after being overwritten and in conjunction with overwritten value"
+        return "Using value after being overwritten (with other variable)"
     }
 
-    override fun getStaticDescription(): String? {
+    override fun getStaticDescription(): String {
         //the ctrl  + f1 box +  desc of the inspection.
         return """
             This inspection tells whenever a mutable variable have been overwritten by said value, only later to be used in conjunction with that overwritten value
         """.trimIndent()
     }
 
-    override fun getDescriptionFileName(): String? {
+    override fun getDescriptionFileName(): String {
         return "more desc ? "
     }
 
@@ -53,14 +50,14 @@ class UsageAfterOverwriting : AbstractKotlinInspection() {
         isOnTheFly: Boolean
     ): KtVisitorVoid {
         return binaryExpressionVisitor { assignExpression: KtBinaryExpression ->
-            //is this an assignment ? if not skip
-            val left = assignExpression.left ?: return@binaryExpressionVisitor
-            val right = assignExpression.right ?: return@binaryExpressionVisitor
             if (assignExpression.isNotEqual) {
                 return@binaryExpressionVisitor
             }
+            val left = assignExpression.left ?: return@binaryExpressionVisitor
+            val right = assignExpression.right ?: return@binaryExpressionVisitor
             val leftResolved = left.resolveAsKtProperty() ?: return@binaryExpressionVisitor
             val rightResolved = right.resolveAsKtProperty() ?: return@binaryExpressionVisitor
+            
             //now we know that we have an assignment to a particular field / variable.
             //now look forward and see where this field/variable is used.
             //TODO what is the "real" scope ?? hmm ....
@@ -97,7 +94,7 @@ class UsageAfterOverwriting : AbstractKotlinInspection() {
                     val rightName = rightResolved.name ?: ""
                     holder.registerProblemSafe(
                         usageInvocation,
-                        "Using ${leftName.wrapInQuotes()} after overwriting it with ${rightName.wrapInQuotes()}, thus they are the same, this looks like a bug (use after overwrite in conjunction with overwritten value)."
+                        "Using ${leftName.modifications.wrapInQuotes()} after overwriting it with ${rightName.modifications.wrapInQuotes()}, thus they are the same, this looks like a bug (use after overwrite in conjunction with overwritten value)."
                     )
                 }
 
@@ -115,8 +112,4 @@ fun KtExpression.resolveAsKtProperty(): KtProperty? {
 
 fun KtNameReferenceExpression.resolveAsKtProperty(): KtProperty? {
     return resolve() as? KtProperty
-}
-
-fun String.wrapInQuotes(): String {
-    return "\"$this\""
 }

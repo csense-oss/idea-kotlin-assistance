@@ -3,7 +3,7 @@ package csense.idea.kotlin.assistance.inspections
 import csense.idea.kotlin.test.*
 import org.junit.*
 
-class FunctionAndValueInvocationNamingInspectionTest : KotlinLightCodeInsightFixtureTestCaseJunit4() {
+class FunctionAndValueInvocationNamingTest : KotlinLightCodeInsightFixtureTestCaseJunit4() {
     override fun getTestDataPath(): String  = "src/test/testData/FunctionAndValueInvocationNamingInspection"
 
     @Before
