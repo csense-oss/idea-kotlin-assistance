@@ -2,11 +2,10 @@ import org.jetbrains.kotlin.gradle.tasks.*
 
 plugins {
     //https://github.com/JetBrains/gradle-intellij-plugin
-    id("org.jetbrains.intellij") version "1.11.0"
-    kotlin("jvm") version "1.8.0"
-    java
+    id("org.jetbrains.intellij") version "1.17.3"
+    kotlin("jvm") version "2.0.20"
     //https://github.com/jeremylong/dependency-check-gradle/releases
-    id("org.owasp.dependencycheck") version "7.4.4"
+    id("org.owasp.dependencycheck") version "10.0.4"
 }
 
 group = "csense-idea"
@@ -17,10 +16,11 @@ version = "0.10.0"
 intellij {
     updateSinceUntilBuild.set(false)
     plugins.set(listOf("Kotlin", "java"))
-    version.set("2021.3")
+    version.set("2022.3")
 }
 repositories {
     mavenCentral()
+    mavenLocal()
     maven {
         //https://dev.azure.com/csense-oss/csense-oss/_artifacts
         url = uri("https://pkgs.dev.azure.com/csense-oss/csense-oss/_packaging/csense-oss/maven/v1")
@@ -29,13 +29,13 @@ repositories {
 }
 
 dependencies {
-    implementation("csense.kotlin:csense-kotlin-jvm:0.0.59")
-    implementation("csense.kotlin:csense-kotlin-annotations-jvm:0.0.50")
+    implementation("csense.kotlin:csense-kotlin-jvm:0.0.60")
+    implementation("csense.kotlin:csense-kotlin-annotations-jvm:0.0.63")
     implementation("csense.kotlin:csense-kotlin-datastructures-algorithms:0.0.41")
-    implementation("csense.idea.base:csense-idea-base:0.1.41")
+    implementation("csense.idea.base:csense-idea-base:0.1.71")
 
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.6.4")
-    testImplementation("csense.kotlin:csense-kotlin-tests:0.0.59")
+    testImplementation("csense.kotlin:csense-kotlin-tests:0.0.60")
     testImplementation("csense.idea.test:csense-idea-test:0.1.0")
 }
 
@@ -54,10 +54,10 @@ tasks.getByName("check").dependsOn("dependencyCheckAnalyze")
 
 tasks {
     compileKotlin {
-        kotlinOptions.jvmTarget = "11"
+        kotlinOptions.jvmTarget = "17"
     }
     compileTestKotlin {
-        kotlinOptions.jvmTarget = "11"
+        kotlinOptions.jvmTarget = "17"
     }
     test {
         testLogging {
@@ -65,9 +65,6 @@ tasks {
             showStackTraces = true
             exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
         }
-    }
-    buildSearchableOptions {
-        enabled = false
     }
     runIde {
 //        ideDir.set(file("/home/kasper/.local/share/JetBrains/Toolbox/apps/AndroidStudio/ch-0/211.7628.21.2111.8139111/"))

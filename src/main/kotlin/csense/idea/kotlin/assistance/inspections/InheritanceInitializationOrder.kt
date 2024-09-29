@@ -6,8 +6,10 @@ import csense.idea.base.bll.*
 import csense.idea.base.bll.kotlin.*
 import csense.idea.kotlin.assistance.*
 import csense.kotlin.datastructures.collections.*
+import csense.kotlin.extensions.collections.*
 import org.jetbrains.kotlin.idea.inspections.*
 import org.jetbrains.kotlin.psi.*
+import kotlin.collections.isNotEmpty
 
 class InheritanceInitializationOrder : AbstractKotlinInspection() {
 
@@ -59,29 +61,21 @@ class InheritanceInitializationOrder : AbstractKotlinInspection() {
         isOnTheFly: Boolean
     ): KtVisitorVoid {
         return classVisitor { ourClass: KtClass ->
-            val ourFqName = ourClass.fqName?.asString() ?: return@classVisitor
-            val isAbstractOrOpen = ourClass.isAbstractOrOpen()
-            val isInheriting = ourClass.superTypeListEntries.isNotEmpty()
+            val isAbstractOrOpen: Boolean = ourClass.isAbstractOrOpen()
+            val isInheriting: Boolean = ourClass.superTypeListEntries.isNotEmpty()
 
-            if (!isInheriting && !isAbstractOrOpen) {
-                //we are not using inheritance bail out
-                return@classVisitor
-            }
-            //case child class
-            if (isInheriting) {
-                handleChildClass(ourClass, ourFqName, holder)
-            }
-            //case base class (potentially child as well)
-            if (isAbstractOrOpen) {
-                handleBaseClass(ourClass, ourFqName, holder)
+            val ourFqName: String = ourClass.fqName?.asString() ?: return@classVisitor
+            when {
+                isInheriting -> handleChildClass(ourClass = ourClass, ourFqName = ourFqName, holder = holder)
+                isAbstractOrOpen -> handleBaseClass(ourClass = ourClass, ourFqName = ourFqName, holder = holder)
             }
         }
     }
 
     fun handleBaseClass(ourClass: KtClass, ourFqName: String, holder: ProblemsHolder) {
         computeBaseClassDangerousStarts(ourClass, ourFqName)
-            .forEach { (property, references) ->
-                val refNames = references.map { it.getReferencedName() }.distinct()
+            .forEach { (property: KtProperty, references: List<KtNameReferenceExpression>) ->
+                val refNames: List<String> = references.map { it.getReferencedName() }.distinct()
                 holder.registerProblemSafe(
                     property,
                     "You are using a constructor provided argument for an overridden property\n" +
@@ -114,7 +108,7 @@ class InheritanceInitializationOrder : AbstractKotlinInspection() {
             it.isOverriding()
         }
 
-        val toLookFor = inputParameterNames.toMap(
+        val toLookFor = inputParameterNames.toMapFlat(
             keyMapper = { it },
             valueMapper = { QuickNameLookupValue(0, false) }
         )
@@ -235,7 +229,7 @@ class InheritanceInitializationOrder : AbstractKotlinInspection() {
         }
 
         val namesToLookFor = (dangerousFunctions.map { it.name } + dangerousProperties.map { it.name }).filterNotNull()
-        val namesToLookForSet = namesToLookFor.toMap(
+        val namesToLookForSet = namesToLookFor.toMapFlat(
             keyMapper = { it },
             valueMapper = { QuickNameLookupValue(0, false) }
         )
@@ -255,20 +249,4 @@ class InheritanceInitializationOrder : AbstractKotlinInspection() {
     private val superClassDangerousStateCache:
             SimpleLRUCache<KtClassOrObject, Pair<Map<KtProperty, List<KtNameReferenceExpression>>, Long>> =
         SimpleLRUCache(500)
-}
-
-//when csense 0.0.47 is ready,
-
-public inline fun <T, Key, Value> Collection<T>.toMap(
-    keyMapper: Function1<T, Key>,
-    valueMapper: Function1<T, Value>
-): Map<Key, Value> = toMutableMap(keyMapper, valueMapper)
-
-public inline fun <T, Key, Value> Collection<T>.toMutableMap(
-    keyMapper: Function1<T, Key>,
-    valueMapper: Function1<T, Value>
-): MutableMap<Key, Value> = LinkedHashMap<Key, Value>(size).also { result ->
-    forEach {
-        result[keyMapper(it)] = valueMapper(it)
-    }
 }

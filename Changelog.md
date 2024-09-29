@@ -1,5 +1,6 @@
 # Changelog
 ## 0.10.0
+- bump kotlin 2.0
 - 
 
 ### 0.9.14

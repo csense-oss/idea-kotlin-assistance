@@ -8,7 +8,6 @@ object Constants {
     val lambdaParameterNameAnnotationFqName = FqName("kotlin.ParameterName")
     
     init {
-//        L.usePrintAsLoggers()
         L.isLoggingAllowed(false)
     }
 }
